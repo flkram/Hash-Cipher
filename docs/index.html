@@ -1,0 +1,161 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash Cipher</title>
+    <style>
+        /* Add styles for error message text */
+        .error-message {
+            color: red;
+            font-weight: bold;
+            display: none; /* Hidden by default */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        /* Sidebar styling */
+        .sidebar {
+            width: 200px;
+            background-color: #333;
+            padding-top: 20px;
+            color: white;
+            position: fixed;
+            height: 100%;
+        }
+        .sidebar h2 {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .sidebar h3 {
+            font-size: 1.1em;
+            color: white;
+            margin-top: 20px;
+            padding-left: 15px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            font-size: 1em;
+        }
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        /* Content area styling */
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            max-width: 400px;
+            width: 100%;
+        }
+        input, button, textarea {
+            margin: 10px 0;
+            padding: 8px;
+            font-size: 1em;
+            width: 100%; /* This makes both textboxes and buttons take up the full width of the container */
+            box-sizing: border-box; /* Ensures padding is included in width calculation */
+        }
+        
+        button {
+            width: auto; /* Let buttons auto-size based on their content */
+            max-width: 100%; /* Prevent buttons from overflowing */
+        }
+        
+        input, textarea {
+            width: 100%; /* Ensure the input and textarea elements match the button width */
+        }
+
+        /* Larger height for the password strength output box */
+        #strengthOutput {
+            height: 150px; /* Set a larger height */
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Sidebar navigation -->
+<div class="sidebar">
+    <h2>Hash Cipher</h2>
+    <br>
+
+    <h3>Hashing Algorithms</h3>
+    <a href="#" onclick="selectAlgorithm('SHA-256')">SHA-256</a>
+    <a href="#" onclick="selectAlgorithm('SHA-3')">SHA-3</a>
+    <a href="#" onclick="selectAlgorithm('Whirlpool')">Whirlpool</a>
+    <a href="#" onclick="selectAlgorithm('MD5')">MD5</a>
+    <br>
+    
+    <h3>Other Tools</h3>
+    <a href="#" onclick="openStrengthCalculator()">Password Strength</a>
+    <a href="#" onclick="openTrainData()">Train Data</a>
+    <!-- Repository Link -->
+    <a href="https://github.com/flkram/Hash-Cipher" target="_blank">Repository Link</a>
+</div>
+
+<!-- Main content area -->
+<div class="content">
+    <div class="container" id="hashContainer">
+        <h2 id="algoTitle">SHA-256 Text Hasher</h2>
+        <button onclick="toggleMode()">Switch to File Mode</button>
+        
+        <!-- Text Input Mode -->
+        <div id="textMode">
+            <input type="text" id="textInput" placeholder="Enter text to hash">
+            <button onclick="hashText()">Generate Hash</button>
+        </div>
+        
+        <!-- File Input Mode (hidden by default) -->
+        <div id="fileMode" style="display: none;">
+            <input type="file" id="fileInput">
+            <button onclick="hashFile()">Generate Hash</button>
+        </div>
+
+        <h4>Hash Output:</h4>
+        <textarea id="hashOutput" readonly></textarea>
+    </div>
+
+    <!-- Password Strength Calculator (hidden by default) -->
+    <div class="container" id="strengthContainer" style="display: none;">
+        <h2>Password Strength Calculator</h2>
+        <input type="text" id="passwordInput" placeholder="Enter a password">
+        <button onclick="calculateStrength()">Calculate Strength</button>
+        <h4>Password Strength:</h4>
+        <textarea id="strengthOutput" readonly></textarea>
+        <button onclick="downloadStrength()">Download Report</button>
+    </div>
+
+    <!-- Content for uploading and training data -->
+    <div class="container" id="trainDataContainer" style="display: none;">
+        <h2>Upload Training Data</h2>
+        <input type="file" id="fileInput" accept=".csv, .xlsx, .json">
+        <button onclick="trainModel()">Train Model</button>
+        <div id="trainError" class="error-message"></div>
+        <div id="instruction" style="margin-top: 20px;">Ensure Flask backend API is running to process the training data. Click on the repo link in the navbar to view the code. The ReadMe contains instructions to run backend locally</div>
+    </div>
+</div>
+
+<script src="script.js"> </script>
+<script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
+
+</body>
+</html>
