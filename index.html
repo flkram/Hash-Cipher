@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hash Cipher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        /* Sidebar styling */
+        .sidebar {
+            width: 200px;
+            background-color: #333;
+            padding-top: 20px;
+            color: white;
+            position: fixed;
+            height: 100%;
+        }
+        .sidebar h2 {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .sidebar h3 {
+            font-size: 1.1em;
+            color: white;
+            margin-top: 20px;
+            padding-left: 15px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            color: white;
+            display: block;
+            font-size: 1em;
+        }
+        .sidebar a:hover {
+            background-color: #575757;
+        }
+        /* Content area styling */
+        .content {
+            margin-left: 200px;
+            padding: 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            max-width: 400px;
+            width: 100%;
+        }
+        input, button, textarea {
+            margin: 10px 0;
+            padding: 8px;
+            font-size: 1em;
+            width: 100%;
+        }
+        textarea {
+            height: 100px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar navigation -->
+<div class="sidebar">
+    <h2>Hash Cipher</h2>
+    <br>
+
+    <h3>Hashing Algorithms</h3>
+    <a href="#" onclick="selectAlgorithm('SHA-256')">SHA-256</a>
+    <a href="#" onclick="selectAlgorithm('SHA-3')">SHA-3</a>
+    <a href="#" onclick="selectAlgorithm('Whirlpool')">Whirlpool</a>
+    <a href="#" onclick="selectAlgorithm('MD5')">MD5</a>
+    <br>
+    
+    <h3>Other Tools</h3>
+    <a href="#" onclick="openStrengthCalculator()">Password Strength Checker</a>
+</div>
+
+<!-- Main content area -->
+<div class="content">
+    <div class="container" id="hashContainer">
+        <h2 id="algoTitle">SHA-256 Text Hasher</h2>
+        <button onclick="toggleMode()">Switch to File Mode</button>
+        
+        <!-- Text Input Mode -->
+        <div id="textMode">
+            <input type="text" id="textInput" placeholder="Enter text to hash">
+            <button onclick="hashText()">Generate Hash</button>
+        </div>
+        
+        <!-- File Input Mode (hidden by default) -->
+        <div id="fileMode" style="display: none;">
+            <input type="file" id="fileInput">
+            <button onclick="hashFile()">Generate Hash</button>
+        </div>
+
+        <h4>Hash Output:</h4>
+        <textarea id="hashOutput" readonly></textarea>
+    </div>
+
+    <!-- Password Strength Calculator (hidden by default) -->
+    <div class="container" id="strengthContainer" style="display: none;">
+        <h2>Password Strength Calculator</h2>
+        <input type="text" id="passwordInput" placeholder="Enter a password">
+        <button onclick="calculateStrength()">Calculate Strength</button>
+        <h4>Password Strength:</h4>
+        <textarea id="strengthOutput" readonly></textarea>
+        <button onclick="downloadStrength()">Download Report</button>
+    </div>
+</div>
+
+<script>
+    let currentAlgorithm = 'SHA-256';
+    let currentMode = 'text';
+
+    // Function to select the hashing algorithm from the sidebar
+    function selectAlgorithm(algorithm) {
+        currentAlgorithm = algorithm;
+        document.getElementById("algoTitle").textContent = `${algorithm} Hasher`;
+        document.getElementById("hashOutput").value = ''; // Clear the output area
+        showHashContainer();
+    }
+
+    // Function to toggle between text and file hashing modes
+    function toggleMode() {
+        if (currentMode === 'text') {
+            document.getElementById("textMode").style.display = 'none';
+            document.getElementById("fileMode").style.display = 'block';
+            document.querySelector("button").textContent = "Switch to Text Mode";
+            currentMode = 'file';
+        } else {
+            document.getElementById("textMode").style.display = 'block';
+            document.getElementById("fileMode").style.display = 'none';
+            document.querySelector("button").textContent = "Switch to File Mode";
+            currentMode = 'text';
+        }
+        document.getElementById("hashOutput").value = ''; // Clear the output area
+    }
+
+    // Function to hash text input
+    async function hashText() {
+        const text = document.getElementById("textInput").value;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+
+        let hashBuffer;
+        if (currentAlgorithm === 'SHA-256') {
+            hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        } else if (currentAlgorithm === 'SHA-3') {
+            document.getElementById("hashOutput").value = "SHA-3 not yet implemented in Web Crypto API.";
+            return;
+        } else if (currentAlgorithm === 'Whirlpool' || currentAlgorithm === 'MD5') {
+            document.getElementById("hashOutput").value = `${currentAlgorithm} not implemented in Web Crypto API.`;
+            return;
+        }
+
+        const hashHex = bufferToHex(hashBuffer);
+        document.getElementById("hashOutput").value = hashHex;
+    }
+
+    // Function to hash file input
+    async function hashFile() {
+        const fileInput = document.getElementById("fileInput");
+        if (fileInput.files.length === 0) {
+            alert("Please select a file to hash.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+
+        let hashBuffer;
+        if (currentAlgorithm === 'SHA-256') {
+            hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+        } else {
+            document.getElementById("hashOutput").value = `${currentAlgorithm} not implemented in Web Crypto API.`;
+            return;
+        }
+
+        const hashHex = bufferToHex(hashBuffer);
+        document.getElementById("hashOutput").value = hashHex;
+    }
+
+    // Helper function to convert buffer to hexadecimal string
+    function bufferToHex(buffer) {
+        const hashArray = Array.from(new Uint8Array(buffer));
+        return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    // Password Strength Calculator functions
+    function openStrengthCalculator() {
+        document.getElementById("hashContainer").style.display = 'none';
+        document.getElementById("strengthContainer").style.display = 'block';
+    }
+
+    function showHashContainer() {
+        document.getElementById("hashContainer").style.display = 'block';
+        document.getElementById("strengthContainer").style.display = 'none';
+    }
+
+    function calculateStrength() {
+        const password = document.getElementById("passwordInput").value;
+        let strength = "Weak";
+        if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password)) {
+            strength = "Strong";
+        } else if (password.length >= 6) {
+            strength = "Moderate";
+        }
+        document.getElementById("strengthOutput").value = `Password strength: ${strength}`;
+    }
+
+    function downloadStrength() {
+        const strengthText = document.getElementById("strengthOutput").value;
+        const blob = new Blob([strengthText], { type: "text/plain" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "password_strength.txt";
+        link.click();
+    }
+</script>
+
+</body>
+</html>
