@@ -1,0 +1,5 @@
+flask
+flash-cors
+torch
+numpy
+tqdm

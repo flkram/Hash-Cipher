@@ -100,13 +100,15 @@
     <h3>Hashing Algorithms</h3>
     <a href="#" onclick="selectAlgorithm('SHA-256')">SHA-256</a>
     <a href="#" onclick="selectAlgorithm('SHA-3')">SHA-3</a>
-    <a href="#" onclick="selectAlgorithm('Whirlpool')">Whirlpool</a>
+    <a href="#" onclick="selectAlgorithm('CRC-32')">CRC-32</a>
     <a href="#" onclick="selectAlgorithm('MD5')">MD5</a>
     <br>
     
     <h3>Other Tools</h3>
     <a href="#" onclick="openStrengthCalculator()">Password Strength</a>
+    <a href="#" onclick="openPasswordGenerator()">Password Generator</a>
     <a href="#" onclick="openTrainData()">Train Data</a>
+
     <!-- Repository Link -->
     <a href="https://github.com/flkram/Hash-Cipher" target="_blank">Repository Link</a>
 </div>
@@ -145,17 +147,29 @@
 
     <!-- Content for uploading and training data -->
     <div class="container" id="trainDataContainer" style="display: none;">
-        <h2>Upload Training Data</h2>
-        <input type="file" id="fileInput" accept=".csv, .xlsx, .json">
+        <h2>Upload Training Data (JSON format)</h2>
+        <textarea id="jsonInput" placeholder="Paste JSON data here"></textarea>
         <button onclick="trainModel()">Train Model</button>
         <div id="trainError" class="error-message"></div>
         <div id="instruction" style="margin-top: 20px;">Ensure Flask backend API is running to process the training data. Click on the repo link in the navbar to view the code. The ReadMe contains instructions to run backend locally</div>
+        <button onclick="resetModel()">Reset Model</button>
     </div>
+
+    <!-- Password Generator (hidden by default) -->
+    <div class="container" id="passwordGeneratorContainer" style="display: none;">
+        <h2>Password Generator</h2>
+        <button onclick="generatePassword()">Generate Password</button>
+        <h4>Generated Password:</h4>
+        <textarea id="generatedPassword" readonly></textarea>
+    </div>
+
 </div>
 
-<script src="script.js"> </script>
+<script src="https://cdn.jsdelivr.net/npm/crc-32@1.2.2/crc32.min.js"></script>
+<script src="script.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
+
 
 </body>
 </html>

@@ -1,14 +1,14 @@
 # Hash Cipher
 
 ## Overview
-Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **Whirlpool**. The application also integrates machine learning algorithms to analyze password security and train AI models based on a list of password data. The backend uses Flask and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis.
+Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **CRC32**. The application also integrates machine learning algorithms to analyze password security and train AI models based on a list of password data. The backend uses Flask and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis.
 
 ## Link
 - [Website Hosted by GitHub Pages](https://flkram.github.io/Hash-Cipher/).
 
 ## Technologies Used
 
-- **C++**: Used for implementing the core cryptographic hashing algorithms (SHA256, SHA1, MD5, Whirlpool). The C++ code is responsible for securely hashing text or files and providing the hashed output.
+- **C++**: Used for implementing the core cryptographic hashing algorithms (SHA256, SHA1, MD5, CRC32). The C++ code is responsible for securely hashing text or files and providing the hashed output.
 - **Flask and Python**: Used for backend. Handles user requests such as sending text or files for hashing, password strength analysis, and model training. Reads c++ code by converting it into a .so file
 - **PyTorch**: Used to implement machine learning algorithms for password strength analysis. The PyTorch model evaluates password strength based on historical password data and adjusts the analysis over time with additional training data.
 - **Pandas**: Utilized for managing and processing the training data (in CSV, JSON, or XLSX formats). It helps in efficiently handling and manipulating password datasets used to train the machine learning model.

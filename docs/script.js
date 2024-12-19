@@ -5,12 +5,6 @@ function selectAlgorithm(algorithm) {
     // Hide the Train Data container when a new algorithm is selected
     document.getElementById("trainDataContainer").style.display = "none";
     
-    // Check if the selected algorithm is Whirlpool
-    if (algorithm === 'Whirlpool') {
-        alert("Whirlpool unable to run on GitHub Pages. Clone locally to run this hashing algorithm.");
-        return;
-    }
-    
     currentAlgorithm = algorithm;
     document.getElementById("algoTitle").textContent = `${algorithm} Hasher`;
     document.getElementById("hashOutput").value = ''; // Clear the output area
@@ -21,6 +15,7 @@ function openStrengthCalculator() {
     // Hide all other containers
     document.getElementById("hashContainer").style.display = 'none';
     document.getElementById("trainDataContainer").style.display = 'none';
+    document.getElementById("passwordGeneratorContainer").style.display = 'none';
     
     // Show the Password Strength container
     document.getElementById("strengthContainer").style.display = 'block';
@@ -56,8 +51,10 @@ async function hashText() {
         hashHex = bufferToHex(hashBuffer);
     } else if (currentAlgorithm === 'SHA-3') {
         hashHex = sha3_256(arrayBufferToHex(data)); // SHA-3 hashing using js-sha3 library
-    } else if (currentAlgorithm === 'Whirlpool') {
-        hashHex = whirlpool(data); // Whirlpool hashing (needs to be implemented or use a library)
+    } else if (currentAlgorithm === 'CRC-32') {
+        const hash = CRC32.str(text); // Use the CRC32 library to hash the input text
+        hashHex = (hash >>> 0).toString(16);
+        if (hashHex == '0') hashHex = '00000000';
     } else if (currentAlgorithm === 'MD5') {
         hashHex = md5(new TextDecoder().decode(data)); // MD5 hashing using blueimp-md5 library
     }
@@ -82,8 +79,9 @@ async function hashFile() {
         hashHex = bufferToHex(hashBuffer);
     } else if (currentAlgorithm === 'SHA-3') {
         hashHex = sha3_256(arrayBufferToHex(arrayBuffer)); // SHA-3 hashing using js-sha3
-    } else if (currentAlgorithm === 'Whirlpool') {
-        hashHex = whirlpool(arrayBuffer); // Whirlpool hashing
+    } else if (currentAlgorithm === 'CRC-32') {
+        const decodedText = new TextDecoder().decode(new Uint8Array(arrayBuffer)); // Convert Uint8Array to string
+        hashHex = CRC32.str(decodedText);
     } else if (currentAlgorithm === 'MD5') {
         hashHex = md5(arrayBufferToHex(arrayBuffer)); // MD5 hashing using blueimp-md5
     }
@@ -98,14 +96,6 @@ function arrayBufferToHex(buffer) {
         .join('');
 }
 
-// Whirlpool hashing function (implement or use a library)
-function whirlpool(data) {
-    // Assuming you can use a library for Whirlpool, or write your own implementation
-    // If using a library, call it here.
-    return "Whirlpool hash not implemented"; // Placeholder
-}
-
-
 // Helper function to convert buffer to hexadecimal string
 function bufferToHex(buffer) {
     const hashArray = Array.from(new Uint8Array(buffer));
@@ -116,7 +106,8 @@ function bufferToHex(buffer) {
 function showHashContainer() {
     document.getElementById("hashContainer").style.display = 'block';
     document.getElementById("strengthContainer").style.display = 'none';
-    document.getElementById("trainDataContainer").style.display = 'none';  // Hide Train Data container
+    document.getElementById("trainDataContainer").style.display = 'none';
+    document.getElementById("passwordGeneratorContainer").style.display = 'none';
 }
 
 
@@ -125,8 +116,9 @@ async function calculateStrength() {
     const password = document.getElementById("passwordInput").value;
     const strengthOutput = document.getElementById("strengthOutput");
 
-    try {
-        // Make an API call to check password strength
+    // Make an API call to check password strength
+    let isDefault = "";
+    try{
         const response = await fetch('http://localhost:5000/check_password_strength', {
             method: 'POST',
             headers: {
@@ -135,35 +127,45 @@ async function calculateStrength() {
             body: JSON.stringify({ password: password })
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch password strength');
-        }
-
         const data = await response.json();
-
-        // Display the response from the backend (e.g., 'weak', 'medium', 'strong')
-        strengthOutput.value = `Password strength: ${data.strength}`;
-    } catch (error) {
-        let strengthDefault = "Weak";
-        
-        // Apply default algorithm to determine password strength
-        if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password)) {
-            strengthDefault = "Strong";
-        } else if (password.length >= 6) {
-            strengthDefault = "Moderate";
+        const intResponse = parseInt(data, 10);
+        if (intResponse == 0){
+            isDefault = "Low usage from training data.\n This password is uncommon\n Number of occurrences: " + intResponse.toString();
         }
-
-        // Update the output with the default algorithm message and password tips
-        strengthOutput.value = `(Using default algorithm. Connect to backend API to add training data. )
-
-Password strength: ${strengthDefault} 
-
-A strong password:\n` +
-                               `    - Has at least 8 characters.\n` +
-                               `    - Contains a uppercase and lowercase letter\n` +
-                               `    - Includes numbers (e.g., 1, 2, 3).\n` +
-                               `    - Uses special characters (e.g., !, @, #, $).`;
+        else if (intResponse == 1){
+            isDefault = "Medium usage from training data\n This password is somewhat common\n Number of occurrences: " + intResponse.toString();
+        }
+        else{
+            isDefault = "High usage from training data\n This password is very common\n Number of occurrences: " + intResponse.toString();
+        }
     }
+    catch (error){
+        isDefault =  "(Connect to backend API to add training data. )";
+    }
+
+
+    //---
+
+
+    let strengthDefault = "Weak";
+    
+    // Apply default algorithm to determine password strength
+    if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[!@#$%^&*]/.test(password)) {
+        strengthDefault = "Strong";
+    } else if (password.length >= 6) {
+        strengthDefault = "Moderate";
+    }
+
+    // Update the output with the default algorithm message and password tips
+    strengthOutput.value = ` ${isDefault}\n\n
+
+    Password strength: ${strengthDefault} 
+
+    A strong password:\n` +
+                            `    - Has at least 8 characters.\n` +
+                            `    - Contains a uppercase and lowercase letter\n` +
+                            `    - Includes numbers (e.g., 1, 2, 3).\n` +
+                            `    - Uses special characters (e.g., !, @, #, $).`;
 }
 
 
@@ -180,53 +182,116 @@ function openTrainData() {
     // Hide all other containers
     document.getElementById("hashContainer").style.display = "none";
     document.getElementById("strengthContainer").style.display = "none";
+    document.getElementById("passwordGeneratorContainer").style.display = "none";
+    
 
     // Show the Train Data container
     document.getElementById("trainDataContainer").style.display = "block";
 }
 
-// Method to handle training the model
 async function trainModel() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
+    const jsonInput = document.getElementById("jsonInput");
+    const errorMessage = document.getElementById("trainError");
 
-    if (!file) {
-        document.getElementById("trainError").style.display = "block";
-        document.getElementById("trainError").innerText = "Please select a csv/json/xlsx file with 6 columns";
+    // Clear previous error message
+    errorMessage.style.display = "none";
+    errorMessage.textContent = "";
+
+    // Validate JSON input
+    const jsonData = jsonInput.value.trim();
+    if (!jsonData) {
+        errorMessage.textContent = "Please enter valid JSON data.";
+        errorMessage.style.display = "block";
         return;
     }
 
-    // Check if the file is CSV, XLSX, or JSON and validate it
-    if (!['application/json', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(file.type)) {
-        document.getElementById("trainError").style.display = "block";
-        document.getElementById("trainError").innerText = "ERROR: Invalid file type.";
+    let parsedData;
+    try {
+        parsedData = JSON.parse(jsonData);
+    } catch (error) {
+        errorMessage.textContent = "Invalid JSON format. Please check your input.";
+        errorMessage.style.display = "block";
         return;
     }
-
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-        const response = await fetch("/train_data", {
+        const response = await fetch("http://localhost:5000/train_model", {
             method: "POST",
-            body: formData,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(parsedData),
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-            document.getElementById("trainError").style.display = "none";
-            console.log("model.py received data");
-            alert("Training successful!");
-        } else {
-            document.getElementById("trainError").style.display = "block";
-            document.getElementById("trainError").innerText = "ERROR: " + data.error;
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
         }
+
+        const result = await response.json();
+        alert(result.message || "Training data uploaded and processed successfully.");
+
+        // Clear JSON input after successful processing
+        jsonInput.value = "";
     } catch (error) {
-        document.getElementById("trainError").style.display = "block";
-        document.getElementById("trainError").innerText = "ERROR: backend API not connected.";
+        errorMessage.textContent = `Error: ${error.message} - backend API`;
+        errorMessage.style.display = "block";
     }
 }
+
+async function resetModel(){
+    try {
+        const response = await fetch("http://localhost:5000/reset_model", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        alert("Training data successfully reset with status: " + result.toString());
+
+        // Clear JSON input after successful processing
+        jsonInput.value = "";
+    } catch (error) {
+        errorMessage.textContent = `Error: ${error.message} - backend API`;
+        errorMessage.style.display = "block";
+    }
+}
+// Show Password Generator and hide other containers
+function openPasswordGenerator() {
+    document.getElementById("hashContainer").style.display = "none";
+    document.getElementById("strengthContainer").style.display = "none";
+    document.getElementById("trainDataContainer").style.display = "none";
+    document.getElementById("passwordGeneratorContainer").style.display = "block";
+}
+
+// Fetch password from backend and display it
+async function generatePassword() {
+    const passwordOutput = document.getElementById("generatedPassword");
+
+    try {
+        const response = await fetch("http://localhost:5000/generate_password", {
+            method: "GET",
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        passwordOutput.value = result.password || "No password generated.";
+    } catch (error) {
+        passwordOutput.value = `Error: ${error.message}\n Make sure backend API is connected`;
+    }
+}
+
+
+
+
 
 
 
