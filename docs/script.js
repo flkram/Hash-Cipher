@@ -285,7 +285,16 @@ async function generatePassword() {
         const result = await response.json();
         passwordOutput.value = result.password || "No password generated.";
     } catch (error) {
-        passwordOutput.value = `Error: ${error.message}\n Make sure backend API is connected`;
+        const length = Math.floor(Math.random() * 3) + 10; // Random length between 10 and 12
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
+        
+        let password = "";
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * chars.length);
+            password += chars[randomIndex];
+        }
+        
+        passwordOutput.value = password;
     }
 }
 

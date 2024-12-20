@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
+import pandas as pd
 import random
 import time
 import os
@@ -345,5 +346,6 @@ def addInput(newLines):
             inputFile.write(line+'\n')
             
         
-
+def printer(jsonInput):
+    print(pd.DataFrame(jsonInput))
 
