@@ -1,7 +1,7 @@
 # Hash Cipher
 
 ## Overview
-Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **CRC32**. The application also integrates machine learning algorithms to **analyze** password security, **generate** passwords using the model, and **train** the AI model based on a list of password data. The backend uses Flask (Python) and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis. The AI model uses PyTorch for machine/deep learning algorithms. 
+Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **CRC32**. The application also integrates machine learning algorithms to **analyze** password security, **generate** passwords using the model, and **train** the AI model based on a list of password data. The backend uses Flask (Python) and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis. The AI model uses PyTorch for the LSTM model, GRUs, and deep learning algorithms. 
 
 ## Link
 - [Website Hosted by GitHub Pages](https://flkram.github.io/Hash-Cipher/).
@@ -42,14 +42,8 @@ The backend is powered by Flask. To run the backend, follow these steps:
      pip install -r src/requirements.txt
      ```
 
-3. **Build the C++ components** (if applicable):
-   - For Linux:
-     ```bash
-     g++ -o hash_cipher hash_cipher.cpp -lssl -lcrypto
-     ```
-   - For Windows, use Visual Studio to compile the C++ code.
-
-   - An **alternative** for compiling  the c++ components is using WebAssembly to conver the code into JavaScript. To do this run these commands on bash:
+3. **(optional) C++ wasm components**:
+   Use WebAssembly to convert the code into JavaScript. To do this run these commands on bash:
    ```bash
    #Install Emscripten:
     git clone https://github.com/emscripten-core/emsdk.git
@@ -64,15 +58,25 @@ The backend is powered by Flask. To run the backend, follow these steps:
     ./wasmConverters/wasmConverter.sh:
     ```
     
-
-
 4. **Run the Flask server**:
    ```bash
    flask run
    ```
    or
-  ```bash
+   ```bash
    python src/app.py
    ```
 
    By default, the Flask server will run at [http://127.0.0.1:5000](http://127.0.0.1:5000).
+
+## Diagrams
+
+  ### PyTorch Model Flowchart:
+   
+  ![Diagram](diagrams/Model_Flowchart_Diagram.png)
+
+  ### Entity Relationship Diagram:
+
+  ![Diagram](diagrams/Entity_Relationship_Diagram.png)
+
+  
