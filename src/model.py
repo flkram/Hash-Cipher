@@ -230,7 +230,7 @@ def runner(
 
         with open(input_file, 'r', encoding='latin-1') as f:
             passwords = [line.strip() for line in f if 8 <= len(line.strip()) <= 26 and all(32 <= ord(c) < 127 for c in line.strip())]
-
+        
         random.shuffle(passwords)
         max_len = 28
         train_passwords = passwords[:int(0.9 * len(passwords))]
@@ -238,14 +238,14 @@ def runner(
 
         train_dataset = PasswordDataset(train_passwords, max_len)
         val_dataset = PasswordDataset(val_passwords, max_len)
-
+        
         train_dataset.char_to_idx = char_to_idx
         train_dataset.idx_to_char = idx_to_char
         train_dataset.vocab_size = len(char_to_idx)
         val_dataset.char_to_idx = char_to_idx
         val_dataset.idx_to_char = idx_to_char
         val_dataset.vocab_size = len(char_to_idx)
-
+        #print("x")
         train_loader = DataLoader(
             train_dataset,
             batch_size=batch_size,
@@ -254,7 +254,7 @@ def runner(
             pin_memory=True,
             persistent_workers=True
         )
-
+        #print("x")
         val_loader = DataLoader(
             val_dataset,
             batch_size=batch_size,
@@ -263,7 +263,6 @@ def runner(
             pin_memory=True,
             persistent_workers=True
         )
-
         print("Starting training...")
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters())
@@ -335,10 +334,21 @@ def newPassword(input_file: str = 'output.txt') -> str:
     #     res
     
 def resetInput():
-    # os.remove('input.txt')
-    # with open('input.txt', 'w') as newFile:
-    #     newFile.writelines(["password\r", "default\r", "pass123"])
-    addInput(["password", "password2"])
+    os.remove('model.pth')
+    os.remove('best_model.pth')
+    os.remove('input.txt')
+    with open('input.txt', 'w') as newinputFile:
+        newlines = []
+        for i in range(10):
+            newpass = ""
+            for k in range(10):
+                newpass+=chr(random.randint(40,125))
+            newlines.append(newpass+"\n")
+        newinputFile.writelines(newlines)
+            
+
+
+       
 
 def addInput(newLines):
     with open('input.txt', 'a') as inputFile:
@@ -348,4 +358,163 @@ def addInput(newLines):
         
 def printer(jsonInput):
     print(pd.DataFrame(jsonInput))
+    
+    
+#     def runner(
+#     mode: str,
+#     input_file: str = 'input.txt',
+#     output_file: str = 'output.txt',
+#     model_path: str = 'model.pth',
+#     epochs: int = 50,
+#     batch_size: int = 256,
+#     num_passwords: int = 100,
+#     temperature: float = 1.0,
+#     num_workers: int = 4
+# ):
+#     if mode == 'train':
+#         if not input_file:
+#             raise ValueError("Input file required for training")
+        
+#         if os.path.exists(model_path):
+#             os.remove(model_path)
+            
+#         print("Initializing a new model.")
+#         char_to_idx = {chr(i): i - 31 for i in range(32, 127)}
+#         char_to_idx['<PAD>'] = 0
+#         char_to_idx['<START>'] = len(char_to_idx)
+#         char_to_idx['<END>'] = len(char_to_idx)
+#         idx_to_char = {i: char for char, i in char_to_idx.items()}
+#         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
+#         model.to(DEVICE)
+
+#         with open(input_file, 'r', encoding='latin-1') as f:
+#             passwords = [line.strip() for line in f if 8 <= len(line.strip()) <= 26 and all(32 <= ord(c) < 127 for c in line.strip())]
+        
+#         random.shuffle(passwords)
+#         max_len = 28
+#         train_passwords = passwords[:int(0.9 * len(passwords))]
+#         val_passwords = passwords[int(0.9 * len(passwords)):]
+
+#         train_dataset = PasswordDataset(train_passwords, max_len)
+#         val_dataset = PasswordDataset(val_passwords, max_len)
+        
+#         train_dataset.char_to_idx = char_to_idx
+#         train_dataset.idx_to_char = idx_to_char
+#         train_dataset.vocab_size = len(char_to_idx)
+#         val_dataset.char_to_idx = char_to_idx
+#         val_dataset.idx_to_char = idx_to_char
+#         val_dataset.vocab_size = len(char_to_idx)
+#         #print("x")
+#         train_loader = DataLoader(
+#             train_dataset,
+#             batch_size=batch_size,
+#             shuffle=True,
+#             num_workers=num_workers,
+#             pin_memory=True,
+#             persistent_workers=True
+#         )
+#         #print("x")
+#         val_loader = DataLoader(
+#             val_dataset,
+#             batch_size=batch_size,
+#             shuffle=False,
+#             num_workers=num_workers,
+#             pin_memory=True,
+#             persistent_workers=True
+#         )
+#         print("Starting training...")
+#         loss_fn = nn.CrossEntropyLoss()
+#         optimizer = optim.Adam(model.parameters())
+#         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+#         model = train_model(model, train_loader, val_loader, loss_fn, optimizer, scheduler, epochs)
+
+#         torch.save({
+#             'model_state_dict': model.state_dict(),
+#             'char_to_idx': char_to_idx,
+#             'idx_to_char': idx_to_char
+#         }, model_path)
+#         print(f"Model saved: {model_path}")
+
+#     elif mode == 'generate':
+#         if not os.path.exists(model_path):
+#             raise FileNotFoundError(f"Model file not found: {model_path}")
+#         if not output_file:
+#             raise ValueError("Output file required for generation")
+
+#         print(f"Loading model: {model_path}")
+#         checkpoint = torch.load(model_path, map_location='cpu')
+#         char_to_idx = checkpoint['char_to_idx']
+#         idx_to_char = checkpoint['idx_to_char']
+#         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
+#         model.load_state_dict(checkpoint['model_state_dict'])
+
+#         model.eval()
+
+#         print(f"Generating passwords...")
+#         passwords = generate_passwords(model, char_to_idx, idx_to_char, num_passwords, batch_size, num_workers, temperature)
+
+#         with open(output_file, 'w', encoding='utf-8') as f:
+#             for password in passwords:
+#                 f.write(f"{password}\n")
+
+#         print(f"Passwords saved to: {output_file}")
+        
+# def searcher(password: str, input_file: str = 'input.txt') -> int:
+#     """
+#     Counts the number of lines in the input file that are substrings of the given password.
+#     """
+#     count = 0
+#     with open(input_file, 'r', encoding='latin-1') as file:
+#         for line in file:
+#             line = line.strip()
+#             if line in password:
+#                 count += 1
+#     return count
+
+# def newPassword(input_file: str = 'output.txt') -> str:
+#     """
+#     Randomly selects a line from the first 1000 lines of the input file.
+
+#     """
+    
+#     lines = []
+#     with open(input_file, 'r', encoding='latin-1') as file:
+#         for idx, line in enumerate(file):
+#             if idx >= 100:
+#                 break
+#             lines.append(line.strip())
+#     return random.choice(lines) if lines else ""
+
+#     # lineNum = random.randint(1000)
+#     # with open(input_file, 'r', encoding='latin-1') as file:
+#     #     res = file.readline()
+#     #     for i in range(lineNum):
+#     #         res = file.readline()
+#     #     res
+    
+# def resetInput():
+#     #os.remove('model.pth')
+#     #os.remove('best_model.pth')
+#     #os.remove('input.txt')
+#     with open('input.txt', 'w') as newinputFile:
+#         newlines = []
+#         for i in range(10):
+#             newpass = ""
+#             for k in range(10):
+#                 newpass+=chr(random.randint(40,125))
+#             newlines.append(newpass+"\n")
+#         newinputFile.writelines(newlines)
+            
+
+
+       
+
+# def addInput(newLines):
+#     with open('input.txt', 'a') as inputFile:
+#         for line in newLines:
+#             inputFile.write(line+'\n')
+            
+        
+# def printer(jsonInput):
+#     print(pd.DataFrame(jsonInput))
 

@@ -136,7 +136,7 @@ async function calculateStrength() {
             isDefault = "Medium usage from training data\n This password is somewhat common\n Number of occurrences: " + intResponse.toString();
         }
         else{
-            isDefault = "High usage from training data\n This password is very common\n Number of occurrences: " + intResponse.toString();
+            isDefault = "High usage from training data\n This password is very common\n Number of occurrences: " + intResponse.toString() + "+";
         }
     }
     catch (error){
@@ -283,7 +283,12 @@ async function generatePassword() {
         }
 
         const result = await response.json();
-        passwordOutput.value = result.password || "No password generated.";
+        if (result.password){
+            passwordOutput.value = result.password;
+        }
+        else{
+            throw new Error();
+        }
     } catch (error) {
         const length = Math.floor(Math.random() * 3) + 10; // Random length between 10 and 12
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";

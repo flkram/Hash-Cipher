@@ -69,6 +69,7 @@ The backend is powered by Flask. To run the backend, follow these steps:
 
    By default, the Flask server will run at [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
+
 ## Diagrams
 
   ### PyTorch Model Flowchart:
@@ -80,3 +81,76 @@ The backend is powered by Flask. To run the backend, follow these steps:
   ![Diagram](diagrams/Entity_Relationship_Diagram.png)
 
   
+## Training data Input Examples (json format):
+- {}
+- {
+  "pass1": "password",
+  "pass2": "password",
+  "pass3": "password",
+  "pass4": "password",
+  "pass5": "password",
+  }
+- {
+  "key1": "x7L!9t@0w",
+  "key2": "F$2v*3Gqz",
+  "key3": "R@8Km#6vW",
+  "key4": "N$3Lp!4xT",
+  "key5": "P%7Qr*1Ys",
+  "key6": "C#6Vz@3Tp",
+  "key7": "M!1Nk$2Fr",
+  "key8": "D%5Qs*8Vy",
+  "key9": "B!3Wx@7L",
+  "key10": "G#2Tp$5m"
+  }
+-  {
+  "pass1": "password",
+  "pass2": "password",
+  "pass3": "password",
+  "pass4": "password",
+  "pass5": "password",
+  "pass6": "password",
+  "pass7": "password",
+  "pass8": "password",
+  "pass9": "password",
+  "pass10": "password",
+  "pass11": "password",
+  "pass12": "password",
+  "pass13": "password",
+  "pass14": "password",
+  "pass15": "password",
+  "pass16": "password",
+  "pass17": "password",
+  "pass18": "password",
+  "pass19": "password",
+  "pass20": "password",
+  "pass21": "password",
+  "pass22": "password",
+  "pass23": "password",
+  "pass24": "password",
+  "pass25": "password",
+  "pass26": "password",
+  "pass27": "password",
+  "pass28": "password",
+  "pass29": "password",
+  "pass30": "password",
+  "pass31": "password",
+  "pass32": "password",
+  "pass33": "password",
+  "pass34": "password",
+  "pass35": "password",
+  "pass36": "password",
+  "pass37": "password",
+  "pass38": "password",
+  "pass39": "password",
+  "pass40": "password",
+  "pass41": "password",
+  "pass42": "password",
+  "pass43": "password",
+  "pass44": "password",
+  "pass45": "password",
+  "pass46": "password",
+  "pass47": "password",
+  "pass48": "password",
+  "pass49": "password",
+  "pass50": "password"
+}
