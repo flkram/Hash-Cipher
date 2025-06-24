@@ -97,19 +97,19 @@
     <h2>Hash Cipher</h2>
     <br>
 
-    <h3>Hashing Algorithms</h3>
+    <h3><u>Password Hashing</u></h3>
     <a href="#" onclick="selectAlgorithm('SHA-256')">SHA-256</a>
     <a href="#" onclick="selectAlgorithm('SHA-3')">SHA-3</a>
     <a href="#" onclick="selectAlgorithm('CRC-32')">CRC-32</a>
     <a href="#" onclick="selectAlgorithm('MD5')">MD5</a>
-    <br>
     
-    <h3>Other Tools</h3>
+    <h3><u>Password Tools</u></h3>
     <a href="#" onclick="openStrengthCalculator()">Password Strength</a>
     <a href="#" onclick="openPasswordGenerator()">Password Generator</a>
     <a href="#" onclick="openTrainData()">Train Data</a>
+    <a href="#" onclick="openPasswordCipher()">Password Cipher</a>
 
-    <!-- Repository Link -->
+    <h3><u>Supporting Links</u></h3>
     <a href="https://github.com/flkram/Hash-Cipher" target="_blank">Repository Link</a>
 </div>
 
@@ -163,7 +163,17 @@
         <textarea id="generatedPassword" readonly></textarea>
     </div>
 
+    <!-- Password Cipher Tool (hidden by default) -->
+    <div class="container" id="passwordCipherContainer" style="display: none;">
+        <h2>Password Cipher Tool</h2>
+        <input type="text" id="cipherInput" placeholder="Enter hash">
+        <button onclick="applyCipher()">Apply Cipher</button>
+        <h4>Estimated Password based on Hash:</h4>
+        <textarea id="cipherOutput" readonly></textarea>
+        <div id="instruction" style="margin-top: 20px;"> Training data is needed for accuracy. Ensure Flask backend API is running to use training data. </div>
+    </div>
 </div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/crc-32@1.2.2/crc32.min.js"></script>
 <script src="script.js"></script>

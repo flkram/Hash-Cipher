@@ -16,6 +16,7 @@ function openStrengthCalculator() {
     document.getElementById("hashContainer").style.display = 'none';
     document.getElementById("trainDataContainer").style.display = 'none';
     document.getElementById("passwordGeneratorContainer").style.display = 'none';
+    document.getElementById("passwordCipherContainer").style.display = "none";
     
     // Show the Password Strength container
     document.getElementById("strengthContainer").style.display = 'block';
@@ -108,6 +109,7 @@ function showHashContainer() {
     document.getElementById("strengthContainer").style.display = 'none';
     document.getElementById("trainDataContainer").style.display = 'none';
     document.getElementById("passwordGeneratorContainer").style.display = 'none';
+    document.getElementById("passwordCipherContainer").style.display = "none";
 }
 
 
@@ -183,6 +185,7 @@ function openTrainData() {
     document.getElementById("hashContainer").style.display = "none";
     document.getElementById("strengthContainer").style.display = "none";
     document.getElementById("passwordGeneratorContainer").style.display = "none";
+    document.getElementById("passwordCipherContainer").style.display = "none";
     
 
     // Show the Train Data container
@@ -266,6 +269,7 @@ function openPasswordGenerator() {
     document.getElementById("hashContainer").style.display = "none";
     document.getElementById("strengthContainer").style.display = "none";
     document.getElementById("trainDataContainer").style.display = "none";
+    document.getElementById("passwordCipherContainer").style.display = "none";
     document.getElementById("passwordGeneratorContainer").style.display = "block";
 }
 
@@ -302,6 +306,37 @@ async function generatePassword() {
         passwordOutput.value = password;
     }
 }
+
+function openPasswordCipher() {
+    document.getElementById("hashContainer").style.display = "none";
+    document.getElementById("strengthContainer").style.display = "none";
+    document.getElementById("trainDataContainer").style.display = "none";
+    document.getElementById("passwordGeneratorContainer").style.display = "none";
+    document.getElementById("passwordCipherContainer").style.display = "block";
+}
+
+// TO-DO
+//CAESAR SHIFT 3
+function applyCipher() {
+    const input = document.getElementById("cipherInput").value;
+    let result = "";
+
+    for (let i = 0; i < input.length; i++) {
+        let char = input.charCodeAt(i);
+        // Shift only letters
+        if (char >= 65 && char <= 90) {
+            result += String.fromCharCode((char - 65 + 3) % 26 + 65); // Uppercase
+        } else if (char >= 97 && char <= 122) {
+            result += String.fromCharCode((char - 97 + 3) % 26 + 97); // Lowercase
+        } else {
+            result += input[i]; // Non-alphabetic characters stay the same
+        }
+    }
+
+    document.getElementById("cipherOutput").value = result;
+}
+
+
 
 
 
