@@ -1,10 +1,10 @@
 # Hash Cipher
 
-## Overview
-Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **CRC32**. The application also integrates machine learning algorithms to **analyze** password security, **generate** passwords using the model, and **train** the AI model based on a list of password data. The backend uses Flask (Python) and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis. The AI model uses PyTorch for the LSTM model, GRUs, and deep learning algorithms. 
-
 ## Link
 - [Website Hosted by GitHub Pages](https://flkram.github.io/Hash-Cipher/).
+
+## Overview
+Hash Cipher allows users to hash files or text using various cryptographic algorithms, including **SHA256**, **SHA1**, **MD5**, and **CRC32**. The application also integrates machine learning algorithms to **analyze** password security, **generate** passwords using the model, and **train** the AI model based on a list of password data. The backend uses Flask (Python) and C++ for hashing, while the frontend provides an interactive experience for users to input data, view results, and interact with password strength analysis. The AI model uses PyTorch for the LSTM model, GRUs, and deep learning algorithms. 
 
 ## Technologies Used
 
