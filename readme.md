@@ -33,18 +33,23 @@ The backend is powered by Flask. To run the backend, follow these steps:
    ```bash
    cd Hash-Cipher/src
    ```
+   *Make sure python is installed*:
+   ```bash
+   python --version
+   ```
+
 3. **Set up the Python Virtual environment** (optional but recommended):
 
     MacOS or Linux:
      ```bash
-     python3 -m venv venv
-     source venv/bin/activate  # On Windows, use venv\Scripts\activate
+     python -m venv venv
+     source venv/bin/activate
      ```
 
     Windows:
      ```bash
-     python3 -m venv venv
-     .\venv\Scripts\Activate.ps1
+     python -m venv venv
+     powershell -ExecutionPolicy Bypass -File .\venv\Scripts\Activate.ps1
      ```
 
 4. **Install Python Dependencies**:
@@ -52,13 +57,14 @@ The backend is powered by Flask. To run the backend, follow these steps:
      pip install -r requirements.txt
      ```
 5. **Run the Flask server**:
-   ```bash
-   flask run
-   ```
-   or
+
    ```bash
    python app.py
    ```    
+
+6. **Backend is now running**
+  Can now use models and password tools in [webpage](https://flkram.github.io/Hash-Cipher/)
+
 
 
 
