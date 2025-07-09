@@ -1,5 +1,5 @@
 flask
-flash-cors
+flask-cors
 torch
 numpy
 tqdm
