@@ -28,46 +28,38 @@ The backend is powered by Flask. To run the backend, follow these steps:
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/flkram/Hash-Cipher.git
-   cd Hash-Cipher
    ```
+2. **Go to Python Source Folder**:
+   ```bash
+   cd Hash-Cipher/src
+   ```
+3. **Set up the Python Virtual environment** (optional but recommended):
 
-2. **Set up the Python environment**:
-   - Create a virtual environment (optional but recommended):
+    MacOS or Linux:
      ```bash
      python3 -m venv venv
      source venv/bin/activate  # On Windows, use venv\Scripts\activate
      ```
-   - Install required dependencies:
+
+    Windows:
      ```bash
-     pip install -r src/requirements.txt
+     python3 -m venv venv
+     .\venv\Scripts\Activate.ps1
      ```
 
-3. **(optional) C++ wasm components**:
-   Use WebAssembly to convert the code into JavaScript. To do this run these commands on bash:
-   ```bash
-   #Install Emscripten:
-    git clone https://github.com/emscripten-core/emsdk.git
-    cd emsdk
-    Install and activate the latest version:
-    Copy code
-    ./emsdk install latest
-    ./emsdk activate latest
-    source ./emsdk_env.sh
-
-    #Compile files to WebAssembly:
-    ./wasmConverters/wasmConverter.sh:
-    ```
-    
-4. **Run the Flask server**:
+4. **Install Python Dependencies**:
+     ```bash
+     pip install -r requirements.txt
+     ```
+5. **Run the Flask server**:
    ```bash
    flask run
    ```
    or
    ```bash
-   python src/app.py
-   ```
+   python app.py
+   ```    
 
-   By default, the Flask server will run at [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 
 ## Diagrams
