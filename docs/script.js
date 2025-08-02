@@ -315,25 +315,47 @@ function openPasswordCipher() {
     document.getElementById("passwordCipherContainer").style.display = "block";
 }
 
-// TO-DO
-//CAESAR SHIFT 3
-function applyCipher() {
+async function applyCipher() {
     const input = document.getElementById("cipherInput").value;
-    let result = "";
 
-    for (let i = 0; i < input.length; i++) {
-        let char = input.charCodeAt(i);
-        // Shift only letters
-        if (char >= 65 && char <= 90) {
-            result += String.fromCharCode((char - 65 + 3) % 26 + 65); // Uppercase
-        } else if (char >= 97 && char <= 122) {
-            result += String.fromCharCode((char - 97 + 3) % 26 + 97); // Lowercase
+    // SHA-256 hash
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+    try {
+        const response = await fetch("http://localhost:5000/check_hash", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ hash: input })
+        });
+
+        const result = await response.json();
+        if (result.found) {
+            document.getElementById("cipherOutput").value = `MATCH FOUND: "${result.password}"`;
         } else {
-            result += input[i]; // Non-alphabetic characters stay the same
+            document.getElementById("cipherOutput").value = "No match found in generated password hashes.";
         }
-    }
+    } catch (error) {
+        let result = "";
+        for (let i = 0; i < input.length; i++) {
+            let char = input.charCodeAt(i);
+            // Shift only letters
+            if (char >= 65 && char <= 90) {
+                result += String.fromCharCode((char - 65 + 3) % 26 + 65); // Uppercase
+            } else if (char >= 97 && char <= 122) {
+                result += String.fromCharCode((char - 97 + 3) % 26 + 97); // Lowercase
+            } else {
+                result += input[i]; // Non-alphabetic characters stay the same
+            }
+        }
 
-    document.getElementById("cipherOutput").value = result;
+        document.getElementById("cipherOutput").value = result;
+    }
 }
 
 

@@ -2,10 +2,19 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import ctypes, os
 import model
+import hashlib
+import json
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes and origins
 
+# Global hash map for quick lookup
+generated_password_hashes = {}
+
+# Load from file if exists
+if os.path.exists("outputmaps.json"):
+    with open("outputmaps.json", "r") as f:
+        generated_password_hashes = json.load(f)
 
 
 
@@ -55,10 +64,25 @@ def train_model():
         model.runner("train")
         #except:
             #return jsonify({"message": "Error uploading training data"})
+            
         try:
             model.runner("generate")
-        except:
-            return jsonify({"message": "Error generating passwords from data"})
+
+            # After password generation, read output.txt and hash the passwords
+            if os.path.exists("output.txt"):
+                with open("output.txt", "r", encoding="utf-8") as f:
+                    for line in f:
+                        password = line.strip()
+                        hash_val = hashlib.sha256(password.encode()).hexdigest()
+                        generated_password_hashes[hash_val] = password
+
+                # Save to JSON
+                with open("outputmaps.json", "w", encoding="utf-8") as json_file:
+                    json.dump(generated_password_hashes, json_file, indent=4)
+
+        except Exception as e:
+            return jsonify({"message": "Error generating passwords from data", "error": str(e)})
+
             
         return jsonify({"message": "Training data uploaded and processed successfully"})
     
@@ -130,6 +154,23 @@ def hash_text():
     
     
     
+@app.route("/check_hash", methods=["POST"])
+def check_hash():
+    data = request.get_json()
+    hash_val = data.get("hash", "")
+
+    if not hash_val:
+        return jsonify({"error": "Hash not provided"}), 400
+
+    match = generated_password_hashes.get(hash_val)
+    print(hash_val)
+    if match:
+        return jsonify({"found": True, "password": match})
+    else:
+        return jsonify({"found": False})
+
+
+
     
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
