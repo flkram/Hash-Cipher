@@ -1,6 +1,7 @@
 __pycache__
 model.pth
 best_model.pth
-outputmaps.json
+venv
 output.txt
+outputmaps.json
 input.txt
