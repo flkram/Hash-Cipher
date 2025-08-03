@@ -5,7 +5,6 @@
 #include <sstream>
 #include <cstdint>
 
-// Precomputed CRC32 lookup table
 const uint32_t crc32_table[256] = {
     0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
     0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
@@ -41,32 +40,33 @@ const uint32_t crc32_table[256] = {
     0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
-
-// Compute CRC32 using the lookup table
 uint32_t computeCRC32(const std::string& input) {
-    uint32_t crc = 0xFFFFFFFF; // Initial CRC value
-
-    for (const char& byte : input) {
-        uint8_t index = static_cast<uint8_t>((crc ^ byte) & 0xFF);
+    uint32_t crc = 0xFFFFFFFF;
+    for (char c : input) {
+        uint8_t index = (crc ^ static_cast<uint8_t>(c)) & 0xFF;
         crc = (crc >> 8) ^ crc32_table[index];
     }
-
-    return crc ^ 0xFFFFFFFF; // Final XOR value
+    return crc ^ 0xFFFFFFFF;
 }
 
-// Convert CRC32 result to hexadecimal string
 std::string crc32ToHex(uint32_t crc) {
     std::stringstream ss;
     ss << std::setw(8) << std::setfill('0') << std::hex << crc;
     return ss.str();
 }
 
-// C-compatible function for external use
-extern "C" {
-    const char* hashCRC32(const char* input) {
-        static char hexOutput[9];
-        uint32_t crc = computeCRC32(input);
-        snprintf(hexOutput, sizeof(hexOutput), "%08x", crc);
-        return hexOutput;
-    }
+// extern "C" {
+//     const char* hashCRC32(const char* input) {
+//         static char hexOutput[9];
+//         uint32_t crc = computeCRC32(input);
+//         snprintf(hexOutput, sizeof(hexOutput), "%08x", crc);
+//         return hexOutput;
+//     }
+// }
+
+int main() {
+    std::string input = "hello world";
+    uint32_t crc = computeCRC32(input);
+    std::cout << "CRC32: " << crc32ToHex(crc) << std::endl;
+    return 0;
 }

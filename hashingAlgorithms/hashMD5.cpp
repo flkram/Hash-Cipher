@@ -2,42 +2,155 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
-#include <string.h>
-extern "C" {
-    const char* hashMD5(const char* input) {
-        static unsigned char result[MD5_DIGEST_LENGTH];
-        MD5_CTX md5Context;
-        MD5_Init(&md5Context);
-        MD5_Update(&md5Context, input, strlen(input));
-        MD5_Final(result, &md5Context);
+#include <openssl/md5.h>
 
-        static char hexOutput[33];
-        for (int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-            sprintf(hexOutput + (i * 2), "%02x", result[i]);
-        }
-        hexOutput[32] = 0;  // Null-terminate the string
-        return hexOutput;
-    }
-}
+#define MD5_DIGEST_LENGTH 16
+
+// extern "C" {
+//     const char* hashMD5(const char* input) {
+//         unsigned char result[MD5_DIGEST_LENGTH];
+//         MD5_CTX md5Context;
+//         MD5_Init(&md5Context);
+//         MD5_Update(&md5Context, input, strlen(input));
+//         MD5_Final(result, &md5Context);
+
+//         static char hexOutput[33];
+//         for (int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
+//             sprintf(hexOutput + (i * 2), "%02x", result[i]);
+//         }
+//         hexOutput[32] = 0;
+//         return hexOutput;
+//     }
+// }
 
 class MD5 {
 private:
-    // Initialize constants used in MD5 transformation
     static const unsigned int s[64];
     static const unsigned int K[64];
-    static unsigned int F(unsigned int b, unsigned int c, unsigned int d);
-    static unsigned int G(unsigned int b, unsigned int c, unsigned int d);
-    static unsigned int H(unsigned int b, unsigned int c, unsigned int d);
-    static unsigned int I(unsigned int b, unsigned int c, unsigned int d);
+    
+    static unsigned int F(unsigned int b, unsigned int c, unsigned int d) {
+        return (b & c) | (~b & d);
+    }
+    
+    static unsigned int G(unsigned int b, unsigned int c, unsigned int d) {
+        return (b & d) | (c & ~d);
+    }
+    
+    static unsigned int H(unsigned int b, unsigned int c, unsigned int d) {
+        return b ^ c ^ d;
+    }
+    
+    static unsigned int I(unsigned int b, unsigned int c, unsigned int d) {
+        return c ^ (b | ~d);
+    }
 
-    static void transform(unsigned int state[4], unsigned char block[64]);
+    static void transform(unsigned int state[4], unsigned char block[64]) {
+        unsigned int a = state[0], b = state[1], c = state[2], d = state[3];
+        unsigned int x[16];
+        
+        for (int i = 0; i < 16; i++) {
+            x[i] = (block[i * 4]) | (block[i * 4 + 1] << 8) | (block[i * 4 + 2] << 16) | (block[i * 4 + 3] << 24);
+        }
+
+        unsigned int temp;
+        
+        for (int i = 0; i < 64; i++) {
+            if (i < 16) {
+                temp = F(b, c, d) + a + x[i] + K[i];
+            } else if (i < 32) {
+                temp = G(b, c, d) + a + x[(5 * i + 1) % 16] + K[i];
+            } else if (i < 48) {
+                temp = H(b, c, d) + a + x[(3 * i + 5) % 16] + K[i];
+            } else {
+                temp = I(b, c, d) + a + x[(7 * i) % 16] + K[i];
+            }
+            
+            temp = (temp << s[i]) | (temp >> (32 - s[i]));
+            a = d;
+            d = c;
+            c = b;
+            b = b + temp;
+        }
+
+        state[0] += a;
+        state[1] += b;
+        state[2] += c;
+        state[3] += d;
+    }
 
 public:
-    static void MD5Init(unsigned int state[4]);
-    static void MD5Update(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], const unsigned char *input, size_t length);
-    static void MD5Final(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], unsigned char digest[16]);
+    static void MD5Init(unsigned int state[4]) {
+        state[0] = 0x67452301;
+        state[1] = 0xEFCDAB89;
+        state[2] = 0x98BADCFE;
+        state[3] = 0x10325476;
+    }
 
-    static void stringToMD5(const std::string &input, std::string &output);
+    static void MD5Update(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], const unsigned char *input, size_t length) {
+        size_t i, index, partLen;
+        index = (count[0] >> 3) & 0x3F;
+        partLen = 64 - index;
+        
+        count[0] += length << 3;
+        if (count[0] < (length << 3)) {
+            count[1]++;
+        }
+        count[1] += length >> 29;
+
+        if (length >= partLen) {
+            memcpy(&buffer[index], input, partLen);
+            transform(state, buffer);
+
+            for (i = partLen; i + 63 < length; i += 64) {
+                transform(state, (unsigned char*)&input[i]);
+            }
+
+            index = 0;
+        } else {
+            i = 0;
+        }
+
+        memcpy(&buffer[index], &input[i], length - i);
+    }
+
+    static void MD5Final(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], unsigned char digest[16]) {
+        unsigned char padding[64] = { 0x80 };
+        unsigned char length[8];
+        unsigned int index, padLen;
+
+        for (int i = 0; i < 8; i++) {
+            length[i] = (count[i >> 3] >> ((i % 8) * 8)) & 0xFF;
+        }
+
+        index = (count[0] >> 3) & 0x3F;
+        padLen = (index < 56) ? (56 - index) : (120 - index);
+        MD5Update(state, count, buffer, padding, padLen);
+        MD5Update(state, count, buffer, length, 8);
+
+        for (int i = 0; i < 4; i++) {
+            digest[i] = (state[i] & 0xFF);
+            digest[i + 4] = (state[i] >> 8) & 0xFF;
+            digest[i + 8] = (state[i] >> 16) & 0xFF;
+            digest[i + 12] = (state[i] >> 24) & 0xFF;
+        }
+    }
+
+    static void stringToMD5(const std::string &input, std::string &output) {
+        unsigned int state[4];
+        unsigned int count[2] = { 0, 0 };
+        unsigned char buffer[64];
+        unsigned char digest[16];
+
+        MD5Init(state);
+        MD5Update(state, count, buffer, (const unsigned char *)input.c_str(), input.length());
+        MD5Final(state, count, buffer, digest);
+
+        std::stringstream ss;
+        for (int i = 0; i < 16; i++) {
+            ss << std::setw(2) << std::setfill('0') << std::hex << (int)digest[i];
+        }
+        output = ss.str();
+    }
 };
 
 const unsigned int MD5::K[64] = {
@@ -56,131 +169,8 @@ const unsigned int MD5::s[64] = {
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
 };
 
-unsigned int MD5::F(unsigned int b, unsigned int c, unsigned int d) {
-    return (b & c) | (~b & d);
-}
-
-unsigned int MD5::G(unsigned int b, unsigned int c, unsigned int d) {
-    return (b & d) | (c & ~d);
-}
-
-unsigned int MD5::H(unsigned int b, unsigned int c, unsigned int d) {
-    return b ^ c ^ d;
-}
-
-unsigned int MD5::I(unsigned int b, unsigned int c, unsigned int d) {
-    return c ^ (b | ~d);
-}
-
-void MD5::transform(unsigned int state[4], unsigned char block[64]) {
-    unsigned int a = state[0], b = state[1], c = state[2], d = state[3];
-    unsigned int x[16];
-    
-    for (int i = 0; i < 16; i++) {
-        x[i] = (block[i * 4]) | (block[i * 4 + 1] << 8) | (block[i * 4 + 2] << 16) | (block[i * 4 + 3] << 24);
-    }
-
-    unsigned int temp;
-    
-    for (int i = 0; i < 64; i++) {
-        if (i < 16) {
-            temp = F(b, c, d) + a + x[i] + K[i];
-        } else if (i < 32) {
-            temp = G(b, c, d) + a + x[(5 * i + 1) % 16] + K[i];
-        } else if (i < 48) {
-            temp = H(b, c, d) + a + x[(3 * i + 5) % 16] + K[i];
-        } else {
-            temp = I(b, c, d) + a + x[(7 * i) % 16] + K[i];
-        }
-        
-        temp = (temp << s[i]) | (temp >> (32 - s[i]));
-        a = d;
-        d = c;
-        c = b;
-        b = b + temp;
-    }
-
-    state[0] += a;
-    state[1] += b;
-    state[2] += c;
-    state[3] += d;
-}
-
-void MD5::MD5Init(unsigned int state[4]) {
-    state[0] = 0x67452301;
-    state[1] = 0xEFCDAB89;
-    state[2] = 0x98BADCFE;
-    state[3] = 0x10325476;
-}
-
-void MD5::MD5Update(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], const unsigned char *input, size_t length) {
-    size_t i, index, partLen;
-    index = (count[0] >> 3) & 0x3F;
-    partLen = 64 - index;
-    
-    count[0] += length << 3;
-    if (count[0] < (length << 3)) {
-        count[1]++;
-    }
-    count[1] += length >> 29;
-
-    if (length >= partLen) {
-        memcpy(&buffer[index], input, partLen);
-        transform(state, buffer);
-
-        for (i = partLen; i + 63 < length; i += 64) {
-            transform(state, &input[i]);
-        }
-
-        index = 0;
-    } else {
-        i = 0;
-    }
-
-    memcpy(&buffer[index], &input[i], length - i);
-}
-
-void MD5::MD5Final(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], unsigned char digest[16]) {
-    unsigned char padding[64] = { 0x80 };
-    unsigned char length[8];
-    unsigned int index, padLen;
-
-    for (int i = 0; i < 8; i++) {
-        length[i] = (count[i >> 3] >> ((i % 8) * 8)) & 0xFF;
-    }
-
-    index = (count[0] >> 3) & 0x3F;
-    padLen = (index < 56) ? (56 - index) : (120 - index);
-    MD5Update(state, count, buffer, padding, padLen);
-    MD5Update(state, count, buffer, length, 8);
-
-    for (int i = 0; i < 4; i++) {
-        digest[i] = (state[i] & 0xFF);
-        digest[i + 4] = (state[i] >> 8) & 0xFF;
-        digest[i + 8] = (state[i] >> 16) & 0xFF;
-        digest[i + 12] = (state[i] >> 24) & 0xFF;
-    }
-}
-
-void MD5::stringToMD5(const std::string &input, std::string &output) {
-    unsigned int state[4];
-    unsigned int count[2] = { 0, 0 };
-    unsigned char buffer[64];
-    unsigned char digest[16];
-
-    MD5Init(state);
-    MD5Update(state, count, buffer, (const unsigned char *)input.c_str(), input.length());
-    MD5Final(state, count, buffer, digest);
-
-    std::stringstream ss;
-    for (int i = 0; i < 16; i++) {
-        ss << std::setw(2) << std::setfill('0') << std::hex << (int)digest[i];
-    }
-    output = ss.str();
-}
-
 int main() {
-    std::string input = "hello world";
+    std::string input = "1";
     std::string output;
 
     MD5::stringToMD5(input, output);

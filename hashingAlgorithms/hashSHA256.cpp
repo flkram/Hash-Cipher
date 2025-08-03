@@ -4,36 +4,38 @@
 #include <iomanip>
 #include <sstream>
 #include <cstring>
-#include <string.h>
-extern "C" {
-    const char* hashSHA256(const char* input) {
-        static unsigned char hash[SHA256_DIGEST_LENGTH];
-        SHA256_CTX sha256Context;
-        SHA256_Init(&sha256Context);
-        SHA256_Update(&sha256Context, input, strlen(input));
-        SHA256_Final(hash, &sha256Context);
+#include <cstdint>
+#include <openssl/sha.h>
 
-        static char hexOutput[65];
-        for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-            sprintf(hexOutput + (i * 2), "%02x", hash[i]);
-        }
-        hexOutput[64] = 0;  // Null-terminate the string
-        return hexOutput;
-    }
-}
+// extern "C" {
+//     const char* hashSHA256(const char* input) {
+//         static unsigned char hash[SHA256_DIGEST_LENGTH];
+//         SHA256_CTX sha256Context;
+//         SHA256_Init(&sha256Context);
+//         SHA256_Update(&sha256Context, input, strlen(input));
+//         SHA256_Final(hash, &sha256Context);
 
-// Define constants
+//         static char hexOutput[65];
+//         for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+//             sprintf(hexOutput + (i * 2), "%02x", hash[i]);
+//         }
+//         hexOutput[64] = 0;
+//         return hexOutput;
+//     }
+// }
+
 typedef uint32_t word;
 const int HASH_WORDS = 8;
 const int BLOCK_SIZE = 64;
-const int BBITS = 8; // bits in a byte
 const int SIZE_DIVISOR = 256;
-const int ROW_LEN = 4; // size of each word
+const int ROW_LEN = 4;
 const int INIT_W_LEN = 16;
+
 const word initial_h[HASH_WORDS] = {
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 };
+
 const word constant_k[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -53,73 +55,64 @@ const word constant_k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-// Helper function to rotate bits
-word rotate(word val, int bits) {
-    return ((val >> bits) | (val << (32 - bits)));
+static inline uint32_t right_rotate(uint32_t x, int n) {
+    return (x >> n) | (x << (32 - n));
 }
 
-// Helper function for the Sigma0 transformation
-word Sigma0(word a) {
-    return (rotate(a, 2) ^ rotate(a, 13) ^ rotate(a, 22));
+uint32_t Sigma0(uint32_t a) {
+    return right_rotate(a, 2) ^ right_rotate(a, 13) ^ right_rotate(a, 22);
 }
 
-// Helper function for the Sigma1 transformation
-word Sigma1(word a) {
-    return (rotate(a, 6) ^ rotate(a, 11) ^ rotate(a, 25));
+uint32_t Sigma1(uint32_t a) {
+    return right_rotate(a, 6) ^ right_rotate(a, 11) ^ right_rotate(a, 25);
 }
 
-// Ch function
-word ChFunction(word e, word f, word g) {
-    return ((e & f) ^ (~e & g));
+uint32_t ChFunction(uint32_t e, uint32_t f, uint32_t g) {
+    return (e & f) ^ (~e & g);
 }
 
-// Ma function
-word MaFunction(word a, word b, word c) {
-    return ((a & b) ^ (a & c) ^ (b & c));
+uint32_t MaFunction(uint32_t a, uint32_t b, uint32_t c) {
+    return (a & b) ^ (a & c) ^ (b & c);
 }
 
-// Compute the SHA-256 compression round
-void computeRound(word h[HASH_WORDS], word w[BLOCK_SIZE], int n) {
-    word newE, newA;
-    word parsedValue = ChFunction(h[4], h[5], h[6]);
-    parsedValue += h[7] + w[n] + constant_k[n];
-    parsedValue += Sigma1(h[4]);
-    newE = parsedValue + h[3];
-
-    parsedValue += MaFunction(h[0], h[1], h[2]);
-    parsedValue += Sigma0(h[0]);
-    newA = parsedValue;
-
-    for (int i = HASH_WORDS - 1; i >= 0; --i) {
-        if (i == 4) {
-            h[i] = newE;
-        } else if (i == 0) {
-            h[i] = newA;
-        } else {
-            h[i] = h[i - 1];
-        }
-    }
+void computeRound(uint32_t h[HASH_WORDS], uint32_t w[64], int n) {
+    uint32_t T1 = h[7] + Sigma1(h[4]) + ChFunction(h[4], h[5], h[6]) + constant_k[n] + w[n];
+    uint32_t T2 = Sigma0(h[0]) + MaFunction(h[0], h[1], h[2]);
+    
+    h[7] = h[6];
+    h[6] = h[5];
+    h[5] = h[4];
+    h[4] = h[3] + T1;
+    h[3] = h[2];
+    h[2] = h[1];
+    h[1] = h[0];
+    h[0] = T1 + T2;
 }
 
-// Extend the message to 64 words
-void extendMessage(const std::vector<uint8_t>& block, word w[BLOCK_SIZE]) {
+void extendMessage(const std::vector<uint8_t>& block, uint32_t w[64]) {
     for (int i = 0; i < 16; ++i) {
-        w[i] = (block[i * 4] << 24) | (block[i * 4 + 1] << 16) |
-               (block[i * 4 + 2] << 8) | block[i * 4 + 3];
+        w[i] = (block[i * 4] << 24) | 
+               (block[i * 4 + 1] << 16) | 
+               (block[i * 4 + 2] << 8) | 
+               block[i * 4 + 3];
     }
 
     for (int i = 16; i < 64; ++i) {
-        w[i] = (rotate(w[i - 15], 7) ^ rotate(w[i - 15], 18) ^ (w[i - 15] >> 3)) +
-               (rotate(w[i - 2], 17) ^ rotate(w[i - 2], 19) ^ (w[i - 2] >> 10)) +
-               w[i - 7] + w[i - 16];
+        uint32_t s0 = right_rotate(w[i - 15], 7) ^ 
+                     right_rotate(w[i - 15], 18) ^ 
+                     (w[i - 15] >> 3);
+        uint32_t s1 = right_rotate(w[i - 2], 17) ^ 
+                     right_rotate(w[i - 2], 19) ^ 
+                     (w[i - 2] >> 10);
+        w[i] = w[i - 16] + s0 + w[i - 7] + s1;
     }
 }
 
-// SHA-256 padding and compression
 void sha256(const std::string& input, std::string& output) {
     std::vector<uint8_t> data(input.begin(), input.end());
     data.push_back(0x80);
 
+    size_t orig_len = data.size();
     while ((data.size() % 64) != 56) {
         data.push_back(0x00);
     }
@@ -129,33 +122,37 @@ void sha256(const std::string& input, std::string& output) {
         data.push_back(static_cast<uint8_t>((bit_length >> (56 - 8 * i)) & 0xFF));
     }
 
-    word h[HASH_WORDS];
-    std::memcpy(h, initial_h, sizeof(initial_h));
+    uint32_t state[HASH_WORDS];
+    std::memcpy(state, initial_h, sizeof(initial_h));
 
-    word w[BLOCK_SIZE];
-
-    for (size_t i = 0; i < data.size(); i += BLOCK_SIZE) {
-        std::vector<uint8_t> block(data.begin() + i, data.begin() + i + BLOCK_SIZE);
+    uint32_t w[64];
+    for (size_t i = 0; i < data.size(); i += 64) {
+        std::vector<uint8_t> block(data.begin() + i, data.begin() + i + 64);
         extendMessage(block, w);
+        
+        uint32_t temp_state[HASH_WORDS];
+        std::memcpy(temp_state, state, sizeof(state));
+        
         for (int j = 0; j < 64; ++j) {
-            computeRound(h, w, j);
+            computeRound(temp_state, w, j);
+        }
+        
+        for (int k = 0; k < HASH_WORDS; ++k) {
+            state[k] += temp_state[k];
         }
     }
 
     std::stringstream ss;
     for (int i = 0; i < HASH_WORDS; ++i) {
-        ss << std::setw(8) << std::setfill('0') << std::hex << h[i];
+        ss << std::setw(8) << std::setfill('0') << std::hex << state[i];
     }
     output = ss.str();
 }
 
 int main() {
-    std::string input = "hello world";
+    std::string input = "";
     std::string output;
-
     sha256(input, output);
-
-    std::cout << "SHA-256 hash: " << output << std::endl;
-
+    std::cout << "SHA-256: " << output << std::endl;
     return 0;
 }

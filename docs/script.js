@@ -50,8 +50,6 @@ async function hashText() {
     if (currentAlgorithm === 'SHA-256') {
         const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         hashHex = bufferToHex(hashBuffer);
-    } else if (currentAlgorithm === 'SHA-3') {
-        hashHex = sha3_256(arrayBufferToHex(data)); // SHA-3 hashing using js-sha3 library
     } else if (currentAlgorithm === 'CRC-32') {
         const hash = CRC32.str(text); // Use the CRC32 library to hash the input text
         hashHex = (hash >>> 0).toString(16);
@@ -78,13 +76,16 @@ async function hashFile() {
     if (currentAlgorithm === 'SHA-256') {
         const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
         hashHex = bufferToHex(hashBuffer);
-    } else if (currentAlgorithm === 'SHA-3') {
-        hashHex = sha3_256(arrayBufferToHex(arrayBuffer)); // SHA-3 hashing using js-sha3
-    } else if (currentAlgorithm === 'CRC-32') {
-        const decodedText = new TextDecoder().decode(new Uint8Array(arrayBuffer)); // Convert Uint8Array to string
+
+    } 
+    
+    else if (currentAlgorithm === 'CRC-32') {
+        const decodedText = new TextDecoder().decode(new Uint8Array(arrayBuffer)); 
         hashHex = CRC32.str(decodedText);
-    } else if (currentAlgorithm === 'MD5') {
-        hashHex = md5(arrayBufferToHex(arrayBuffer)); // MD5 hashing using blueimp-md5
+    } 
+    
+    else if (currentAlgorithm === 'MD5') {
+        hashHex = md5(arrayBufferToHex(arrayBuffer)); 
     }
 
     document.getElementById("hashOutput").value = hashHex;
