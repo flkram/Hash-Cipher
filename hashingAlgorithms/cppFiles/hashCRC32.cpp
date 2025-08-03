@@ -40,33 +40,57 @@ const uint32_t crc32_table[256] = {
     0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
+/**
+ * @brief Computes the CRC32 checksum for the given input string.
+ * 
+ * @param input The input string for which to compute the checksum.
+ * @return The CRC32 checksum as a 32-bit unsigned integer.
+ */
 uint32_t computeCRC32(const std::string& input) {
-    uint32_t crc = 0xFFFFFFFF;
+    uint32_t crc = 0xFFFFFFFF;  // Initial CRC value
     for (char c : input) {
         uint8_t index = (crc ^ static_cast<uint8_t>(c)) & 0xFF;
-        crc = (crc >> 8) ^ crc32_table[index];
+        crc = (crc >> 8) ^ crc32_table[index];  // Lookup + XOR step
     }
-    return crc ^ 0xFFFFFFFF;
+    return crc ^ 0xFFFFFFFF;  // Final XOR
 }
 
+/**
+ * @brief Converts the 32-bit CRC value to a hexadecimal string.
+ * 
+ * @param crc The CRC32 checksum value.
+ * @return A hexadecimal string representation of the checksum.
+ */
 std::string crc32ToHex(uint32_t crc) {
     std::stringstream ss;
     ss << std::setw(8) << std::setfill('0') << std::hex << crc;
     return ss.str();
 }
 
-// extern "C" {
-//     const char* hashCRC32(const char* input) {
-//         static char hexOutput[9];
-//         uint32_t crc = computeCRC32(input);
-//         snprintf(hexOutput, sizeof(hexOutput), "%08x", crc);
-//         return hexOutput;
-//     }
-// }
+/*
+ * Optional C interface:
+ * Use this block if exposing as a C-compatible shared library function.
+ *
+ * extern "C" {
+ *     const char* hashCRC32(const char* input) {
+ *         static char hexOutput[9];
+ *         uint32_t crc = computeCRC32(input);
+ *         snprintf(hexOutput, sizeof(hexOutput), "%08x", crc);
+ *         return hexOutput;
+ *     }
+ * }
+ */
 
+/**
+ * @brief Main function for testing CRC32 hashing via command line.
+ * 
+ * @param argc Argument count.
+ * @param argv Argument values.
+ * @return Exit code.
+ */
 int main(int argc, char *argv[]) {
     std::string input = "";
-    if (argc>1){
+    if (argc > 1) {
         input = argv[1];
     }
 

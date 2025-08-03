@@ -153,7 +153,7 @@ def hash_text():
     
     
     
-    
+# Checks json data to find existing hash    
 @app.route("/check_hash", methods=["POST"])
 def check_hash():
     data = request.get_json()
@@ -171,6 +171,6 @@ def check_hash():
 
 
 
-    
+# Run app.py as main backend application on port 5000
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

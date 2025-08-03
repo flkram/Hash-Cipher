@@ -7,35 +7,43 @@
 #include <cstdint>
 #include <openssl/sha.h>
 
-// extern "C" {
-//     const char* hashSHA256(const char* input) {
-//         static unsigned char hash[SHA256_DIGEST_LENGTH];
-//         SHA256_CTX sha256Context;
-//         SHA256_Init(&sha256Context);
-//         SHA256_Update(&sha256Context, input, strlen(input));
-//         SHA256_Final(hash, &sha256Context);
+// Optional C interface for use in shared libraries.
+/*
+extern "C" {
+    const char* hashSHA256(const char* input) {
+        static unsigned char hash[SHA256_DIGEST_LENGTH];
+        SHA256_CTX sha256Context;
+        SHA256_Init(&sha256Context);
+        SHA256_Update(&sha256Context, input, strlen(input));
+        SHA256_Final(hash, &sha256Context);
 
-//         static char hexOutput[65];
-//         for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-//             sprintf(hexOutput + (i * 2), "%02x", hash[i]);
-//         }
-//         hexOutput[64] = 0;
-//         return hexOutput;
-//     }
-// }
+        static char hexOutput[65];
+        for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+            sprintf(hexOutput + (i * 2), "%02x", hash[i]);
+        }
+        hexOutput[64] = 0;
+        return hexOutput;
+    }
+}
+*/
 
+// Type alias for 32-bit word
 typedef uint32_t word;
+
+// Constants used in SHA-256
 const int HASH_WORDS = 8;
 const int BLOCK_SIZE = 64;
 const int SIZE_DIVISOR = 256;
 const int ROW_LEN = 4;
 const int INIT_W_LEN = 16;
 
+// Initial hash values (first 32 bits of fractional parts of the square roots of the first 8 primes)
 const word initial_h[HASH_WORDS] = {
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 };
 
+// SHA-256 constants (first 32 bits of the fractional parts of the cube roots of the first 64 primes)
 const word constant_k[64] = {
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
     0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -55,30 +63,48 @@ const word constant_k[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
+/**
+ * @brief Right-rotate a 32-bit word by n bits.
+ */
 static inline uint32_t right_rotate(uint32_t x, int n) {
     return (x >> n) | (x << (32 - n));
 }
 
+/**
+ * @brief SHA-256 Σ₀ function.
+ */
 uint32_t Sigma0(uint32_t a) {
     return right_rotate(a, 2) ^ right_rotate(a, 13) ^ right_rotate(a, 22);
 }
 
+/**
+ * @brief SHA-256 Σ₁ function.
+ */
 uint32_t Sigma1(uint32_t a) {
     return right_rotate(a, 6) ^ right_rotate(a, 11) ^ right_rotate(a, 25);
 }
 
+/**
+ * @brief SHA-256 Ch (choose) function.
+ */
 uint32_t ChFunction(uint32_t e, uint32_t f, uint32_t g) {
     return (e & f) ^ (~e & g);
 }
 
+/**
+ * @brief SHA-256 Maj (majority) function.
+ */
 uint32_t MaFunction(uint32_t a, uint32_t b, uint32_t c) {
     return (a & b) ^ (a & c) ^ (b & c);
 }
 
+/**
+ * @brief Perform one round of SHA-256 transformation.
+ */
 void computeRound(uint32_t h[HASH_WORDS], uint32_t w[64], int n) {
     uint32_t T1 = h[7] + Sigma1(h[4]) + ChFunction(h[4], h[5], h[6]) + constant_k[n] + w[n];
     uint32_t T2 = Sigma0(h[0]) + MaFunction(h[0], h[1], h[2]);
-    
+
     h[7] = h[6];
     h[6] = h[5];
     h[5] = h[4];
@@ -89,32 +115,37 @@ void computeRound(uint32_t h[HASH_WORDS], uint32_t w[64], int n) {
     h[0] = T1 + T2;
 }
 
+/**
+ * @brief Expand a 512-bit input block into 64 32-bit words for processing.
+ */
 void extendMessage(const std::vector<uint8_t>& block, uint32_t w[64]) {
     for (int i = 0; i < 16; ++i) {
-        w[i] = (block[i * 4] << 24) | 
-               (block[i * 4 + 1] << 16) | 
-               (block[i * 4 + 2] << 8) | 
+        w[i] = (block[i * 4] << 24) |
+               (block[i * 4 + 1] << 16) |
+               (block[i * 4 + 2] << 8) |
                block[i * 4 + 3];
     }
 
     for (int i = 16; i < 64; ++i) {
-        uint32_t s0 = right_rotate(w[i - 15], 7) ^ 
-                     right_rotate(w[i - 15], 18) ^ 
-                     (w[i - 15] >> 3);
-        uint32_t s1 = right_rotate(w[i - 2], 17) ^ 
-                     right_rotate(w[i - 2], 19) ^ 
-                     (w[i - 2] >> 10);
+        uint32_t s0 = right_rotate(w[i - 15], 7) ^ right_rotate(w[i - 15], 18) ^ (w[i - 15] >> 3);
+        uint32_t s1 = right_rotate(w[i - 2], 17) ^ right_rotate(w[i - 2], 19) ^ (w[i - 2] >> 10);
         w[i] = w[i - 16] + s0 + w[i - 7] + s1;
     }
 }
 
+/**
+ * @brief Compute the SHA-256 hash of the given input string.
+ * 
+ * @param input The input message as a string.
+ * @param output The resulting SHA-256 hash as a hex string.
+ */
 void sha256(const std::string& input, std::string& output) {
     std::vector<uint8_t> data(input.begin(), input.end());
-    data.push_back(0x80);
+    data.push_back(0x80);  // Append '1' bit followed by zeroes
 
     size_t orig_len = data.size();
     while ((data.size() % 64) != 56) {
-        data.push_back(0x00);
+        data.push_back(0x00);  // Padding until length ≡ 448 mod 512
     }
 
     uint64_t bit_length = static_cast<uint64_t>(input.size()) * 8;
@@ -123,20 +154,20 @@ void sha256(const std::string& input, std::string& output) {
     }
 
     uint32_t state[HASH_WORDS];
-    std::memcpy(state, initial_h, sizeof(initial_h));
+    std::memcpy(state, initial_h, sizeof(initial_h));  // Copy initial state
 
     uint32_t w[64];
     for (size_t i = 0; i < data.size(); i += 64) {
         std::vector<uint8_t> block(data.begin() + i, data.begin() + i + 64);
         extendMessage(block, w);
-        
+
         uint32_t temp_state[HASH_WORDS];
         std::memcpy(temp_state, state, sizeof(state));
-        
+
         for (int j = 0; j < 64; ++j) {
             computeRound(temp_state, w, j);
         }
-        
+
         for (int k = 0; k < HASH_WORDS; ++k) {
             state[k] += temp_state[k];
         }
@@ -149,13 +180,18 @@ void sha256(const std::string& input, std::string& output) {
     output = ss.str();
 }
 
+/**
+ * @brief Main function to compute SHA-256 hash from command-line input.
+ */
 int main(int argc, char *argv[]) {
     std::string input = "";
-    if (argc>1){
+    if (argc > 1) {
         input = argv[1];
     }
+
     std::string output;
     sha256(input, output);
+
     std::cout << "SHA-256: " << output << std::endl;
     return 0;
 }

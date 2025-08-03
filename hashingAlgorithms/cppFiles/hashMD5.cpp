@@ -6,54 +6,64 @@
 
 #define MD5_DIGEST_LENGTH 16
 
-// extern "C" {
-//     const char* hashMD5(const char* input) {
-//         unsigned char result[MD5_DIGEST_LENGTH];
-//         MD5_CTX md5Context;
-//         MD5_Init(&md5Context);
-//         MD5_Update(&md5Context, input, strlen(input));
-//         MD5_Final(result, &md5Context);
+/*
+ * Optional C interface for external use (e.g., dynamic libraries).
+ *
+ * extern "C" {
+ *     const char* hashMD5(const char* input) {
+ *         unsigned char result[MD5_DIGEST_LENGTH];
+ *         MD5_CTX md5Context;
+ *         MD5_Init(&md5Context);
+ *         MD5_Update(&md5Context, input, strlen(input));
+ *         MD5_Final(result, &md5Context);
+ *
+ *         static char hexOutput[33];
+ *         for (int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
+ *             sprintf(hexOutput + (i * 2), "%02x", result[i]);
+ *         }
+ *         hexOutput[32] = 0;
+ *         return hexOutput;
+ *     }
+ * }
+ */
 
-//         static char hexOutput[33];
-//         for (int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-//             sprintf(hexOutput + (i * 2), "%02x", result[i]);
-//         }
-//         hexOutput[32] = 0;
-//         return hexOutput;
-//     }
-// }
-
+/**
+ * @brief Class-based implementation of the MD5 hashing algorithm.
+ */
 class MD5 {
 private:
-    static const unsigned int s[64];
-    static const unsigned int K[64];
-    
+    static const unsigned int s[64];  // Shift amounts
+    static const unsigned int K[64];  // Sine-derived constants
+
+    // Non-linear functions used in MD5 rounds
     static unsigned int F(unsigned int b, unsigned int c, unsigned int d) {
         return (b & c) | (~b & d);
     }
-    
     static unsigned int G(unsigned int b, unsigned int c, unsigned int d) {
         return (b & d) | (c & ~d);
     }
-    
     static unsigned int H(unsigned int b, unsigned int c, unsigned int d) {
         return b ^ c ^ d;
     }
-    
     static unsigned int I(unsigned int b, unsigned int c, unsigned int d) {
         return c ^ (b | ~d);
     }
 
+    /**
+     * @brief Core transformation function operating on 512-bit blocks.
+     */
     static void transform(unsigned int state[4], unsigned char block[64]) {
         unsigned int a = state[0], b = state[1], c = state[2], d = state[3];
         unsigned int x[16];
-        
+
+        // Convert input block to 16 32-bit words
         for (int i = 0; i < 16; i++) {
-            x[i] = (block[i * 4]) | (block[i * 4 + 1] << 8) | (block[i * 4 + 2] << 16) | (block[i * 4 + 3] << 24);
+            x[i] = (block[i * 4]) | (block[i * 4 + 1] << 8) |
+                   (block[i * 4 + 2] << 16) | (block[i * 4 + 3] << 24);
         }
 
         unsigned int temp;
-        
+        // Main 64 rounds of MD5
         for (int i = 0; i < 64; i++) {
             if (i < 16) {
                 temp = F(b, c, d) + a + x[i] + K[i];
@@ -64,14 +74,12 @@ private:
             } else {
                 temp = I(b, c, d) + a + x[(7 * i) % 16] + K[i];
             }
-            
+
             temp = (temp << s[i]) | (temp >> (32 - s[i]));
-            a = d;
-            d = c;
-            c = b;
-            b = b + temp;
+            a = d; d = c; c = b; b += temp;
         }
 
+        // Add results to current hash value
         state[0] += a;
         state[1] += b;
         state[2] += c;
@@ -79,6 +87,7 @@ private:
     }
 
 public:
+    // Initialize MD5 state variables
     static void MD5Init(unsigned int state[4]) {
         state[0] = 0x67452301;
         state[1] = 0xEFCDAB89;
@@ -86,25 +95,24 @@ public:
         state[3] = 0x10325476;
     }
 
+    /**
+     * @brief Update MD5 state with input data.
+     */
     static void MD5Update(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], const unsigned char *input, size_t length) {
         size_t i, index, partLen;
         index = (count[0] >> 3) & 0x3F;
         partLen = 64 - index;
-        
+
         count[0] += length << 3;
-        if (count[0] < (length << 3)) {
-            count[1]++;
-        }
+        if (count[0] < (length << 3)) count[1]++;
         count[1] += length >> 29;
 
         if (length >= partLen) {
             memcpy(&buffer[index], input, partLen);
             transform(state, buffer);
-
             for (i = partLen; i + 63 < length; i += 64) {
                 transform(state, (unsigned char*)&input[i]);
             }
-
             index = 0;
         } else {
             i = 0;
@@ -113,6 +121,9 @@ public:
         memcpy(&buffer[index], &input[i], length - i);
     }
 
+    /**
+     * @brief Finalize MD5 and write digest.
+     */
     static void MD5Final(unsigned int state[4], unsigned int count[2], unsigned char buffer[64], unsigned char digest[16]) {
         unsigned char padding[64] = { 0x80 };
         unsigned char length[8];
@@ -128,18 +139,19 @@ public:
         MD5Update(state, count, buffer, length, 8);
 
         for (int i = 0; i < 4; i++) {
-            digest[i] = (state[i] & 0xFF);
-            digest[i + 4] = (state[i] >> 8) & 0xFF;
-            digest[i + 8] = (state[i] >> 16) & 0xFF;
+            digest[i]      = (state[i] & 0xFF);
+            digest[i + 4]  = (state[i] >> 8) & 0xFF;
+            digest[i + 8]  = (state[i] >> 16) & 0xFF;
             digest[i + 12] = (state[i] >> 24) & 0xFF;
         }
     }
 
+    /**
+     * @brief Convenience function: Computes MD5 of a string and outputs hex.
+     */
     static void stringToMD5(const std::string &input, std::string &output) {
-        unsigned int state[4];
-        unsigned int count[2] = { 0, 0 };
-        unsigned char buffer[64];
-        unsigned char digest[16];
+        unsigned int state[4], count[2] = {0, 0};
+        unsigned char buffer[64], digest[16];
 
         MD5Init(state);
         MD5Update(state, count, buffer, (const unsigned char *)input.c_str(), input.length());
@@ -151,7 +163,7 @@ public:
         }
         output = ss.str();
     }
-};
+}
 
 const unsigned int MD5::K[64] = {
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
@@ -169,6 +181,9 @@ const unsigned int MD5::s[64] = {
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
 };
 
+/**
+ * @brief Main function to compute MD5 hash from command-line input.
+ */
 int main(int argc, char *argv[]) {
     std::string input = "";
     if (argc>1){
