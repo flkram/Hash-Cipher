@@ -87,6 +87,11 @@
             height: 150px; 
         }
         
+        #jsonInput {
+            height: 200px;     /* Increase vertical size */
+            font-size: 1.1em;  /* Optional: make text easier to read */
+        }
+
     </style>
 </head>
 <body>
@@ -145,8 +150,8 @@
 
     <!-- Content for uploading and training data -->
     <div class="container" id="trainDataContainer" style="display: none;">
-        <h2>Upload Training Data (JSON format)</h2>
-        <textarea id="jsonInput" placeholder="Paste JSON data here"></textarea>
+        <h2>Upload Training Data</h2>
+        <textarea id="jsonInput" placeholder="Enter list of passwords (one per line or comma-seperated)"></textarea>
         <button onclick="trainModel()">Train Model</button>
         <div id="trainError" class="error-message"></div>
         <div id="instruction" style="margin-top: 20px;">Ensure Flask backend API is running to process the training data. Click on the repo link in the navbar to view the code. The ReadMe contains instructions to run backend locally</div>

@@ -201,22 +201,36 @@ async function trainModel() {
     errorMessage.style.display = "none";
     errorMessage.textContent = "";
 
-    // Validate JSON input
-    const jsonData = jsonInput.value.trim();
-    if (!jsonData) {
-        errorMessage.textContent = "Please enter valid JSON data.";
+    const rawInput = jsonInput.value.trim();
+
+    if (!rawInput) {
+        errorMessage.textContent = "Please enter a list of passwords (one per line or comma-separated).";
         errorMessage.style.display = "block";
         return;
     }
 
-    let parsedData;
+    let passwordList;
+
+    // Try to parse as a comma-separated or newline-separated list
     try {
-        parsedData = JSON.parse(jsonData);
+        // Split by newlines or commas, trim whitespace
+        passwordList = rawInput
+            .split(/\r?\n|,/)
+            .map(p => p.trim())
+            .filter(p => p !== "");
+        
+        if (passwordList.length === 0) throw "Empty list after processing.";
     } catch (error) {
-        errorMessage.textContent = "Invalid JSON format. Please check your input.";
+        errorMessage.textContent = "Invalid format. Please input a list of strings.";
         errorMessage.style.display = "block";
         return;
     }
+
+    // Convert list to JSON object: {1: "pass1", 2: "pass2", ...}
+    const passwordDict = {};
+    passwordList.forEach((pw, index) => {
+        passwordDict[index + 1] = pw;
+    });
 
     try {
         const response = await fetch("http://localhost:5000/train_model", {
@@ -224,7 +238,7 @@ async function trainModel() {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(parsedData),
+            body: JSON.stringify(passwordDict),
         });
 
         if (!response.ok) {
@@ -233,14 +247,13 @@ async function trainModel() {
 
         const result = await response.json();
         alert(result.message || "Training data uploaded and processed successfully.");
-
-        // Clear JSON input after successful processing
         jsonInput.value = "";
     } catch (error) {
         errorMessage.textContent = `Error: ${error.message} - backend API`;
         errorMessage.style.display = "block";
     }
 }
+
 
 async function resetModel(){
     try {
