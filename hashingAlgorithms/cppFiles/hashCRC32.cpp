@@ -64,8 +64,12 @@ std::string crc32ToHex(uint32_t crc) {
 //     }
 // }
 
-int main() {
-    std::string input = "hello world";
+int main(int argc, char *argv[]) {
+    std::string input = "";
+    if (argc>1){
+        input = argv[1];
+    }
+
     uint32_t crc = computeCRC32(input);
     std::cout << "CRC32: " << crc32ToHex(crc) << std::endl;
     return 0;

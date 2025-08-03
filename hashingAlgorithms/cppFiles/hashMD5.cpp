@@ -169,8 +169,11 @@ const unsigned int MD5::s[64] = {
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
 };
 
-int main() {
-    std::string input = "1";
+int main(int argc, char *argv[]) {
+    std::string input = "";
+    if (argc>1){
+        input = argv[1];
+    }
     std::string output;
 
     MD5::stringToMD5(input, output);

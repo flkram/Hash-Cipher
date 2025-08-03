@@ -149,8 +149,11 @@ void sha256(const std::string& input, std::string& output) {
     output = ss.str();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     std::string input = "";
+    if (argc>1){
+        input = argv[1];
+    }
     std::string output;
     sha256(input, output);
     std::cout << "SHA-256: " << output << std::endl;
