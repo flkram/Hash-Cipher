@@ -1,8 +1,19 @@
+
+// Current selected algorithm and file mode for hashing
 let currentAlgorithm = 'SHA-256';
 let currentMode = 'text';
 
+// List of card containers from UI (UPDATE IF NEW CONTAINER ADDED)
+const cardList = [
+    "guideContainer",
+    "hashContainer",
+    "strengthContainer",
+    "trainDataContainer",
+    "passwordGeneratorContainer",
+    "passwordCipherContainer"
+];
 
-
+// Helper method for handling active highlight
 function filterNav() {
     const filter = document.getElementById('navSearch').value.toLowerCase();
     document.querySelectorAll('nav.sidebar a').forEach(a => {
@@ -11,7 +22,7 @@ function filterNav() {
     });
 }
 
-// handle active highlight on click
+// Handle active highlight on click
 document.querySelectorAll('nav.sidebar a').forEach(link => {
     link.addEventListener('click', function () {
         document.querySelectorAll('nav.sidebar a').forEach(a => a.classList.remove('active'));
@@ -21,15 +32,22 @@ document.querySelectorAll('nav.sidebar a').forEach(link => {
 
 
 
-// Show Password Generator and hide other containers
-function openHomeScreen() {
-    document.getElementById("hashContainer").style.display = "none";
-    document.getElementById("strengthContainer").style.display = "none";
-    document.getElementById("trainDataContainer").style.display = "none";
-    document.getElementById("passwordCipherContainer").style.display = "none";
-    document.getElementById("passwordGeneratorContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "block";
+function openContainer(containerIdToShow) {
+    const cardList = [
+        'guideContainer',
+        'hashContainer',
+        'strengthContainer',
+        'trainDataContainer',
+        'passwordGeneratorContainer',
+        'passwordCipherContainer'
+    ];
+
+    cardList.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === containerIdToShow) ? "block" : "none";
+    });
 }
+
 
 
 
@@ -40,21 +58,8 @@ function selectAlgorithm(algorithm) {
     currentAlgorithm = algorithm;
     document.getElementById("algoTitle").textContent = `${algorithm} Hasher`;
     document.getElementById("hashOutput").value = ''; // Clear the output area
-    showHashContainer();
+    openContainer('hashContainer');
 }
-
-function openStrengthCalculator() {
-    // Hide all other containers
-    document.getElementById("hashContainer").style.display = 'none';
-    document.getElementById("trainDataContainer").style.display = 'none';
-    document.getElementById("passwordGeneratorContainer").style.display = 'none';
-    document.getElementById("passwordCipherContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "none";
-
-    // Show the Password Strength container
-    document.getElementById("strengthContainer").style.display = 'block';
-}
-
 
 
 // Function to toggle between text and file hashing modes
@@ -150,16 +155,6 @@ function bufferToHex(buffer) {
 }
 
 
-function showHashContainer() {
-    document.getElementById("hashContainer").style.display = 'block';
-    document.getElementById("strengthContainer").style.display = 'none';
-    document.getElementById("trainDataContainer").style.display = 'none';
-    document.getElementById("passwordGeneratorContainer").style.display = 'none';
-    document.getElementById("passwordCipherContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "none";
-}
-
-
 // Function to calculate password strength and check with API
 async function calculateStrength() {
     const password = document.getElementById("passwordInput").value;
@@ -225,18 +220,6 @@ function downloadStrength() {
     link.href = URL.createObjectURL(blob);
     link.download = "password_strength.txt";
     link.click();
-}
-
-function openTrainData() {
-    // Hide all other containers
-    document.getElementById("hashContainer").style.display = "none";
-    document.getElementById("strengthContainer").style.display = "none";
-    document.getElementById("passwordGeneratorContainer").style.display = "none";
-    document.getElementById("passwordCipherContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "none";
-
-    // Show the Train Data container
-    document.getElementById("trainDataContainer").style.display = "block";
 }
 
 async function trainModel() {
@@ -325,16 +308,6 @@ async function resetModel(){
     }
 }
 
-// Show Password Generator and hide other containers
-function openPasswordGenerator() {
-    document.getElementById("hashContainer").style.display = "none";
-    document.getElementById("strengthContainer").style.display = "none";
-    document.getElementById("trainDataContainer").style.display = "none";
-    document.getElementById("passwordCipherContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "none";
-    document.getElementById("passwordGeneratorContainer").style.display = "block";
-}
-
 // Fetch password from backend and display it
 async function generatePassword() {
     const passwordOutput = document.getElementById("generatedPassword");
@@ -367,15 +340,6 @@ async function generatePassword() {
         
         passwordOutput.value = password;
     }
-}
-
-function openPasswordCipher() {
-    document.getElementById("hashContainer").style.display = "none";
-    document.getElementById("strengthContainer").style.display = "none";
-    document.getElementById("trainDataContainer").style.display = "none";
-    document.getElementById("passwordGeneratorContainer").style.display = "none";
-    document.getElementById("homeContainer").style.display = "none";
-    document.getElementById("passwordCipherContainer").style.display = "block";
 }
 
 async function applyCipher() {

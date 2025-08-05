@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hash Cipher</n/a></title>
+  <title>Hash Cipher</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -168,24 +168,27 @@
     </div>
     <div class="section">
       <h2>Password Tools</h2>
-      <a href="#" onclick="openStrengthCalculator()" data-label="Strength">Strength Calculator</a>
-      <a href="#" onclick="openPasswordGenerator()" data-label="Generator">Password Generator</a>
-      <a href="#" onclick="openTrainData()" data-label="Train Data">Upload Training Data</a>
-      <a href="#" onclick="openPasswordCipher()" data-label="Cipher">Password Cipher</a>
+      <a href="#" onclick="openContainer('strengthContainer')" data-label="Strength">Strength Calculator</a>
+      <a href="#" onclick="openContainer('passwordGeneratorContainer')" data-label="Generator">Password Generator</a>
+      <a href="#" onclick="openContainer('trainDataContainer')" data-label="Train Data">Upload Training Data</a>
+      <a href="#" onclick="openContainer('passwordCipherContainer')" data-label="Cipher">Password Cipher</a>
     </div>
     <div class="section">
       <h2>Other</h2>
-      <a href="#" onclick="openHomeScreen()" data-label="Guide">Guide</a>
+      <a href="#" onclick="openContainer('guideContainer')" data-label="Guide">Guide</a>
       <a href="https://github.com/flkram/Hash-Cipher" target="_blank" data-label="Repository">Link to Repository</a>
     </div>
   </nav>
 
   <main class="content">
 
-    <div class="card" id="homeContainer" style="text-align: center; display:none;">
+    <div class="card" id="guideContainer" style="text-align: center; display:none;">
       <h2>Welcome to Hash Cipher</h2>
       <p style="margin-top: 1rem;">
         Hash Cipher is an all-in-one tool for password analysis, transformation, and evaluation. Whether you're testing security strength, generating secure passwords, or exploring cryptographic functions, this platform provides everything you need in one interface.
+      </p>
+      <p style="margin-top: 1rem;">
+        To train data and use the password tools, go to repository link, clone the repository on your local machine, and follow the directions to run the backend Flask application. 
       </p>
 
       <ul style="margin: 2rem auto; padding: 0; list-style: none; max-width: 600px; text-align: left;">
