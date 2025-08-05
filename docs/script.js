@@ -1,6 +1,38 @@
 let currentAlgorithm = 'SHA-256';
 let currentMode = 'text';
 
+
+
+function filterNav() {
+    const filter = document.getElementById('navSearch').value.toLowerCase();
+    document.querySelectorAll('nav.sidebar a').forEach(a => {
+        const label = a.getAttribute('data-label').toLowerCase();
+        a.style.display = label.includes(filter) ? 'block' : 'none';
+    });
+}
+
+// handle active highlight on click
+document.querySelectorAll('nav.sidebar a').forEach(link => {
+    link.addEventListener('click', function () {
+        document.querySelectorAll('nav.sidebar a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+
+
+// Show Password Generator and hide other containers
+function openHomeScreen() {
+    document.getElementById("hashContainer").style.display = "none";
+    document.getElementById("strengthContainer").style.display = "none";
+    document.getElementById("trainDataContainer").style.display = "none";
+    document.getElementById("passwordCipherContainer").style.display = "none";
+    document.getElementById("passwordGeneratorContainer").style.display = "none";
+    document.getElementById("homeContainer").style.display = "block";
+}
+
+
+
 function selectAlgorithm(algorithm) {
     // Hide the Train Data container when a new algorithm is selected
     document.getElementById("trainDataContainer").style.display = "none";
@@ -17,7 +49,8 @@ function openStrengthCalculator() {
     document.getElementById("trainDataContainer").style.display = 'none';
     document.getElementById("passwordGeneratorContainer").style.display = 'none';
     document.getElementById("passwordCipherContainer").style.display = "none";
-    
+    document.getElementById("homeContainer").style.display = "none";
+
     // Show the Password Strength container
     document.getElementById("strengthContainer").style.display = 'block';
 }
@@ -123,6 +156,7 @@ function showHashContainer() {
     document.getElementById("trainDataContainer").style.display = 'none';
     document.getElementById("passwordGeneratorContainer").style.display = 'none';
     document.getElementById("passwordCipherContainer").style.display = "none";
+    document.getElementById("homeContainer").style.display = "none";
 }
 
 
@@ -199,7 +233,7 @@ function openTrainData() {
     document.getElementById("strengthContainer").style.display = "none";
     document.getElementById("passwordGeneratorContainer").style.display = "none";
     document.getElementById("passwordCipherContainer").style.display = "none";
-    
+    document.getElementById("homeContainer").style.display = "none";
 
     // Show the Train Data container
     document.getElementById("trainDataContainer").style.display = "block";
@@ -290,12 +324,14 @@ async function resetModel(){
         errorMessage.style.display = "block";
     }
 }
+
 // Show Password Generator and hide other containers
 function openPasswordGenerator() {
     document.getElementById("hashContainer").style.display = "none";
     document.getElementById("strengthContainer").style.display = "none";
     document.getElementById("trainDataContainer").style.display = "none";
     document.getElementById("passwordCipherContainer").style.display = "none";
+    document.getElementById("homeContainer").style.display = "none";
     document.getElementById("passwordGeneratorContainer").style.display = "block";
 }
 
@@ -338,6 +374,7 @@ function openPasswordCipher() {
     document.getElementById("strengthContainer").style.display = "none";
     document.getElementById("trainDataContainer").style.display = "none";
     document.getElementById("passwordGeneratorContainer").style.display = "none";
+    document.getElementById("homeContainer").style.display = "none";
     document.getElementById("passwordCipherContainer").style.display = "block";
 }
 
