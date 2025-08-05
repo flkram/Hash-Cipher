@@ -93,6 +93,31 @@ def train_model():
 
 
 
+# Route to add password to password hash data in JSON file
+@app.route("/add_password_hash", methods=["PUT"])
+def add_password_hash():
+    data = request.get_json()
+
+    password = data.get("password")
+    if not password:
+        return jsonify({"error": "Password not provided"}), 400
+
+    # Hash the password
+    hash_val = hashlib.sha256(password.encode()).hexdigest()
+
+    # Update the global map
+    generated_password_hashes[hash_val] = password
+
+    # Save to file
+    with open("outputmaps.json", "w", encoding="utf-8") as json_file:
+        json.dump(generated_password_hashes, json_file, indent=4)
+
+    return jsonify({"message": "Password and hash saved successfully", "hash": hash_val}), 200
+
+
+
+
+
 # Route to train the model with JSON data
 @app.route('/reset_model', methods=['POST'])
 def reset_model():
@@ -153,6 +178,8 @@ def hash_text():
     
     
     
+
+    
 # Checks json data to find existing hash    
 @app.route("/check_hash", methods=["POST"])
 def check_hash():
@@ -163,11 +190,13 @@ def check_hash():
         return jsonify({"error": "Hash not provided"}), 400
 
     match = generated_password_hashes.get(hash_val)
-    print(hash_val)
+
     if match:
         return jsonify({"found": True, "password": match})
     else:
         return jsonify({"found": False})
+
+
 
 
 

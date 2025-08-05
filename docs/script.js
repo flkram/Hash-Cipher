@@ -51,14 +51,26 @@ async function hashText() {
         const hashBuffer = await crypto.subtle.digest("SHA-256", data);
         hashHex = bufferToHex(hashBuffer);
     } else if (currentAlgorithm === 'CRC-32') {
-        const hash = CRC32.str(text); // Use the CRC32 library to hash the input text
+        const hash = CRC32.str(text);
         hashHex = (hash >>> 0).toString(16);
         if (hashHex == '0') hashHex = '00000000';
     } else if (currentAlgorithm === 'MD5') {
-        hashHex = md5(new TextDecoder().decode(data)); // MD5 hashing using blueimp-md5 library
+        hashHex = md5(new TextDecoder().decode(data)); 
     }
 
     document.getElementById("hashOutput").value = hashHex;
+
+    // Saves to password database
+    try{
+        const response = await fetch("http://localhost:5000/add_password_hash", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ password: text }),
+        });
+    }
+    catch (error){}
 }
 
 // Function to hash file input
