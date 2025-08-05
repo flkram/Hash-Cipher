@@ -1,187 +1,267 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hash Cipher</title>
-    <style>
-        /* Add styles for error message text */
-        .error-message {
-            color: red;
-            font-weight: bold;
-            display: none; /* Hidden by default */
-        }
-        /* Main website design scheme */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            background-color: #f4f4f9;
-        }
-        /* Sidebar styling */
-        .sidebar {
-            width: 200px;
-            background-color: #333;
-            padding-top: 20px;
-            color: white;
-            position: fixed;
-            height: 100%;
-        }
-        .sidebar h2 {
-            text-align: center;
-            margin: 10px 0;
-        }
-        .sidebar h3 {
-            font-size: 1.1em;
-            color: white;
-            margin-top: 20px;
-            padding-left: 15px;
-        }
-        .sidebar a {
-            padding: 10px 15px;
-            text-decoration: none;
-            color: white;
-            display: block;
-            font-size: 1em;
-        }
-        .sidebar a:hover {
-            background-color: #575757;
-        }
-        /* Content area styling */
-        .content {
-            margin-left: 200px;
-            padding: 20px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            text-align: center;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            background-color: #fff;
-            max-width: 400px;
-            width: 100%;
-        }
-        input, button, textarea {
-            margin: 10px 0;
-            padding: 8px;
-            font-size: 1em;
-            width: 100%; /* This makes both textboxes and buttons take up the full width of the container */
-            box-sizing: border-box; 
-        }
-        
-        button {
-            width: auto; /* Let buttons auto-size based on their content */
-            max-width: 100%; 
-        }
-        
-        input, textarea {
-            width: 100%; /* Ensure the input and textarea elements match the button width */
-        }
-
-        #strengthOutput {
-            height: 150px; 
-        }
-        
-        #jsonInput {
-            height: 200px;     /* Increase vertical size */
-            font-size: 1.1em;  /* Optional: make text easier to read */
-        }
-
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hash Cipher</n/a></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1f1f1f;
+      --sidebar-bg: #111;
+      --surface: #2a2a2a;
+      --primary: #4f46e5;
+      --secondary: #3b82f6;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --radius: 8px;
+      --shadow: rgba(0, 0, 0, 0.7);
+      --transition: 0.3s;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+    }
+    nav.sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+    nav.sidebar h1 {
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      text-align: center;
+      color: var(--primary);
+    }
+    nav.sidebar input[type=search] {
+      padding: 0.5rem;
+      border: none;
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+      background: var(--surface);
+      color: var(--text);
+    }
+    nav.sidebar .section {
+      margin-bottom: 1.5rem;
+    }
+    nav.sidebar .section h2 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      color: var(--muted);
+    }
+    nav.sidebar .section a {
+      display: block;
+      padding: 0.5rem 0.75rem;
+      color: var(--text);
+      text-decoration: none;
+      border-radius: var(--radius);
+      transition: background var(--transition);
+    }
+    nav.sidebar .section a:hover,
+    nav.sidebar .section a.active {
+      background: var(--surface);
+    }
+    main.content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+      gap: 2.5rem;
+    }
+    .card {
+      background: var(--surface);
+      padding: 2rem;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 12px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 20px var(--shadow);
+    }
+    .card h2 {
+      margin-bottom: 1.5rem;
+      font-size: 1.4rem;
+      color: var(--primary);
+    }
+    .input-group {
+      margin-bottom: 2rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .input-group label {
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .input-group input[type=text],
+    .input-group textarea,
+    .input-group input[type=file] {
+      padding: 0.75rem;
+      font-size: 1rem;
+      background: var(--bg);
+      border: 1px solid #444;
+      border-radius: var(--radius);
+      color: var(--text);
+      resize: vertical;
+    }
+    /* Increase height for JSON input and strength report */
+    #jsonInput,
+    #strengthOutput {
+      min-height: 200px;
+    }
+    .btn {
+      padding: 0.75rem 1.25rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition);
+      align-self: start;
+      margin-bottom: 1.5rem;
+    }
+    .btn:hover {
+      background: var(--secondary);
+    }
+    .toggle-btn {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      margin-bottom: 1.5rem;
+    }
+    .toggle-btn:hover {
+      background: var(--primary);
+      color: #fff;
+    }
+  </style>
 </head>
 <body>
-
-<!-- Sidebar navigation -->
-<div class="sidebar">
-    <h2>Hash Cipher</h2>
-    <br>
-
-    <h3><u>Password Hashing</u></h3>
-    <a href="#" onclick="selectAlgorithm('SHA-256')">SHA-256</a>
-    <a href="#" onclick="selectAlgorithm('CRC-32')">CRC-32</a>
-    <a href="#" onclick="selectAlgorithm('MD5')">MD5</a>
-    
-    <h3><u>Password Tools</u></h3>
-    <a href="#" onclick="openStrengthCalculator()">Password Strength</a>
-    <a href="#" onclick="openPasswordGenerator()">Password Generator</a>
-    <a href="#" onclick="openTrainData()">Train Data</a>
-    <a href="#" onclick="openPasswordCipher()">Password Cipher</a>
-
-    <h3><u>Supporting Links</u></h3>
-    <a href="https://github.com/flkram/Hash-Cipher" target="_blank">Repository Link</a>
-</div>
-
-<!-- Main content area -->
-<div class="content">
-    <div class="container" id="hashContainer">
-        <h2 id="algoTitle">SHA-256 Text Hasher</h2>
-        <button onclick="toggleMode()">Switch to File Mode</button>
-        
-        <!-- Text Input Mode -->
-        <div id="textMode">
-            <input type="text" id="textInput" placeholder="Enter text to hash">
-            <button onclick="hashText()">Generate Hash</button>
+  <nav class="sidebar">
+    <h1>Hash Cipher</h1>
+    <input type="search" id="navSearch" placeholder="Search..." oninput="filterNav()">
+    <div class="section">
+      <h2>Password Hashing</h2>
+      <a href="#" onclick="selectAlgorithm('SHA-256')" class="active" data-label="SHA-256">SHA-256</a>
+      <a href="#" onclick="selectAlgorithm('CRC-32')" data-label="CRC-32">CRC-32</a>
+      <a href="#" onclick="selectAlgorithm('MD5')" data-label="MD5">MD5</a>
+    </div>
+    <div class="section">
+      <h2>Password Tools</h2>
+      <a href="#" onclick="openStrengthCalculator()" data-label="Strength">Strength Calculator</a>
+      <a href="#" onclick="openPasswordGenerator()" data-label="Generator">Password Generator</a>
+      <a href="#" onclick="openTrainData()" data-label="Train Data">Upload Training Data</a>
+      <a href="#" onclick="openPasswordCipher()" data-label="Cipher">Password Cipher</a>
+    </div>
+    <div class="section">
+      <h2>Links</h2>
+      <a href="https://github.com/flkram/Hash-Cipher" target="_blank" data-label="Repository">Repository</a>
+    </div>
+  </nav>
+  <main class="content">
+    <div class="card" id="hashContainer">
+      <h2 id="algoTitle">SHA-256 Text Hasher</h2>
+      <button class="btn toggle-btn" onclick="toggleMode()">Switch to File Mode</button>
+      <div id="textMode">
+        <div class="input-group">
+          <label for="textInput">Text Input</label>
+          <input type="text" id="textInput" placeholder="Enter text to hash">
         </div>
-        
-        <!-- File Input Mode (hidden by default) -->
-        <div id="fileMode" style="display: none;">
-            <input type="file" id="fileInput">
-            <button onclick="hashFile()">Generate Hash</button>
+        <button class="btn" onclick="hashText()">Generate Hash</button>
+      </div>
+      <div id="fileMode" style="display:none;">
+        <div class="input-group">
+          <label for="fileInput">File Input</label>
+          <input type="file" id="fileInput">
         </div>
-
-        <h4>Hash Output:</h4>
+        <button class="btn" onclick="hashFile()">Generate Hash</button>
+      </div>
+      <div class="input-group">
+        <label for="hashOutput">Hash Output</label>
         <textarea id="hashOutput" readonly></textarea>
+      </div>
     </div>
 
-    <!-- Password Strength Calculator (hidden by default) -->
-    <div class="container" id="strengthContainer" style="display: none;">
-        <h2>Password Strength Calculator</h2>
+    <div class="card" id="strengthContainer" style="display:none;">
+      <h2>Password Strength Calculator</h2>
+      <div class="input-group">
+        <label for="passwordInput">Password</label>
         <input type="text" id="passwordInput" placeholder="Enter a password">
-        <button onclick="calculateStrength()">Calculate Strength</button>
-        <h4>Password Strength:</h4>
+      </div>
+      <button class="btn" onclick="calculateStrength()">Calculate Strength</button>
+      <div class="input-group">
+        <label for="strengthOutput">Strength Report</label>
         <textarea id="strengthOutput" readonly></textarea>
-        <button onclick="downloadStrength()">Download Report</button>
+      </div>
+      <button class="btn" onclick="downloadStrength()">Download Report</button>
     </div>
 
-    <!-- Content for uploading and training data -->
-    <div class="container" id="trainDataContainer" style="display: none;">
-        <h2>Upload Training Data</h2>
-        <textarea id="jsonInput" placeholder="Enter list of passwords (one per line or comma-seperated)"></textarea>
-        <button onclick="trainModel()">Train Model</button>
-        <div id="trainError" class="error-message"></div>
-        <div id="instruction" style="margin-top: 20px;">Ensure Flask backend API is running to process the training data. Click on the repo link in the navbar to view the code. The ReadMe contains instructions to run backend locally</div>
-        <button onclick="resetModel()">Reset Model</button>
+    <div class="card" id="trainDataContainer" style="display:none;">
+      <h2>Upload Training Data</h2>
+      <div class="input-group">
+        <label for="jsonInput">Passwords List</label>
+        <textarea id="jsonInput" placeholder="One per line or comma-separated"></textarea>
+      </div>
+      <div id="trainError" class="error-message"></div>
+      <button class="btn" onclick="trainModel()">Train Model</button>
+      <button class="btn" style="background:#DC2626;" onclick="resetModel()">Reset Model</button>
     </div>
 
-    <!-- Password Generator (hidden by default) -->
-    <div class="container" id="passwordGeneratorContainer" style="display: none;">
-        <h2>Password Generator</h2>
-        <button onclick="generatePassword()">Generate Password</button>
-        <h4>Generated Password:</h4>
+    <div class="card" id="passwordGeneratorContainer" style="display:none;">
+      <h2>Password Generator</h2>
+      <button class="btn" onclick="generatePassword()">Generate Password</button>
+      <div class="input-group">
+        <label for="generatedPassword">Generated Password</label>
         <textarea id="generatedPassword" readonly></textarea>
+      </div>
     </div>
 
-    <!-- Password Cipher Tool (hidden by default) -->
-    <div class="container" id="passwordCipherContainer" style="display: none;">
-        <h2>Password Cipher Tool</h2>
-        <input type="text" id="cipherInput" placeholder="Enter hash">
-        <button onclick="applyCipher()">Apply Cipher</button>
-        <h4>Estimated Password based on Hash:</h4>
+    <div class="card" id="passwordCipherContainer" style="display:none;">
+      <h2>Password Cipher Tool</h2>
+      <div class="input-group">
+        <label for="cipherInput">Enter Hash / Text</label>
+        <input type="text" id="cipherInput" placeholder="Enter hash or text">
+      </div>
+      <button class="btn" onclick="applyCipher()">Apply Cipher</button>
+      <div class="input-group">
+        <label for="cipherOutput">Result</label>
         <textarea id="cipherOutput" readonly></textarea>
-        <div id="instruction" style="margin-top: 20px;"> Training data is needed for accuracy. Ensure Flask backend API is running to use training data. </div>
+      </div>
     </div>
-</div>
+  </main>
 
-<script src="script.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/crc-32@1.2.2/crc32.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
-
-
+  <script>
+    function filterNav() {
+      const filter = document.getElementById('navSearch').value.toLowerCase();
+      document.querySelectorAll('nav.sidebar a').forEach(a => {
+        const label = a.getAttribute('data-label').toLowerCase();
+        a.style.display = label.includes(filter) ? 'block' : 'none';
+      });
+    }
+  </script>
+  <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/crc-32@1.2.2/crc32.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-sha3@0.8.0/build/sha3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/blueimp-md5@2.19.0/js/md5.min.js"></script>
 </body>
 </html>
