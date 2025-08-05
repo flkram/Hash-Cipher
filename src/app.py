@@ -16,6 +16,24 @@ if os.path.exists("outputmaps.json"):
     with open("outputmaps.json", "r") as f:
         generated_password_hashes = json.load(f)
 
+if not os.path.exists("input.txt"):
+    default_passwords = [
+    "D31lR{(5,m",
+    "Px@byJp[@T",
+    "Iokw3aL6{k",
+    "YD{[Ng>fCy",
+    "Y-/GlLe|/h",
+    "QZ|B@\\6xDc",
+    "z2>`f6vO^f",
+    "W8FfdcJ2nU",
+    "0<l`*bA[2H",
+    "0@om-<w5xu",
+    ""
+    ]
+    with open("input.txt", "w", encoding="utf-8") as f:
+        f.write("\n".join(default_passwords))
+
+
 
 
 
