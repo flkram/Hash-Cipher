@@ -13,52 +13,63 @@ import warnings
 from torch.multiprocessing import Pool, set_start_method
 import torch.multiprocessing as mp
 
+# Suppress specific warning messages
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+# Select CUDA if available, else fallback to CPU
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Determine number of usable CPU cores (80% of available cores)
 available_cores = multiprocessing.cpu_count()
 used_cores = max(1, int(available_cores * 0.8))
-torch.set_num_threads(used_cores)
+torch.set_num_threads(used_cores)  # Limit PyTorch to use only selected number of threads
 
+# Print selected device info if running in main process
 if multiprocessing.current_process().name == "MainProcess":
     print(f"Using device: {DEVICE}")
 
+# Set multiprocessing start method to 'spawn' for compatibility
 try:
     set_start_method('spawn')
 except RuntimeError:
-    pass 
+    pass  # Ignore if already set
 
+# Function to silence stdout/stderr in worker processes
 def init_worker(worker_id):
     import sys
     sys.stdout = open(os.devnull, 'w')
     sys.stderr = open(os.devnull, 'w')
 
+# Dataset class for password training data
 class PasswordDataset(Dataset):
     def __init__(self, passwords, max_len):
-        self.passwords = passwords
-        self.max_len = max_len
+        self.passwords = passwords  # List of passwords
+        self.max_len = max_len  # Max length of any sequence
+        # Character-to-index mapping for ASCII 32–126
         self.char_to_idx = {chr(i): i - 31 for i in range(32, 127)}
-        self.char_to_idx['<PAD>'] = 0
-        self.char_to_idx['<START>'] = len(self.char_to_idx)
-        self.char_to_idx['<END>'] = len(self.char_to_idx)
+        self.char_to_idx['<PAD>'] = 0  # Padding token
+        self.char_to_idx['<START>'] = len(self.char_to_idx)  # Start-of-sequence token
+        self.char_to_idx['<END>'] = len(self.char_to_idx)  # End-of-sequence token
+        # Inverse mapping: index-to-character
         self.idx_to_char = {i: char for char, i in self.char_to_idx.items()}
-        self.vocab_size = len(self.char_to_idx)
+        self.vocab_size = len(self.char_to_idx)  # Total number of unique tokens
 
     def __len__(self):
-        return len(self.passwords)
+        return len(self.passwords)  # Total number of password samples
 
     def __getitem__(self, idx):
-        password = self.passwords[idx]
-        encoded = [self.char_to_idx['<START>']]
+        password = self.passwords[idx]  # Retrieve password by index
+        encoded = [self.char_to_idx['<START>']]  # Begin with <START> token
         for c in password:
             if c in self.char_to_idx:
-                encoded.append(self.char_to_idx[c])
-        encoded.append(self.char_to_idx['<END>'])
+                encoded.append(self.char_to_idx[c])  # Encode each character
+        encoded.append(self.char_to_idx['<END>'])  # End with <END> token
+        # Pad sequence to match max_len
         encoded += [self.char_to_idx['<PAD>']] * (self.max_len - len(encoded))
-        return torch.tensor(encoded[:self.max_len], dtype=torch.long)
+        return torch.tensor(encoded[:self.max_len], dtype=torch.long)  # Return fixed-length tensor
 
-#Used from https://github.com/gorgarp/TorchPass/blob/main/LICENSE
+
+# Used COPYRIGHT from https://github.com/gorgarp/TorchPass/blob/main/LICENSE
 class PasswordGenerator(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout=0.2):
         super(PasswordGenerator, self).__init__()
@@ -75,7 +86,7 @@ class PasswordGenerator(nn.Module):
         x = self.dropout(x)
         return self.fc(x)
 
-# Train the model
+# Used COPYRIGHT from https://github.com/gorgarp/TorchPass/blob/main/LICENSE
 def train_model(model, train_loader, val_loader, loss_fn, optimizer, scheduler, num_epochs, patience=5):
     model.train()
     best_val_loss = float('inf')
@@ -147,60 +158,73 @@ def train_model(model, train_loader, val_loader, loss_fn, optimizer, scheduler, 
     model.load_state_dict(torch.load('best_model.pth', map_location=DEVICE))
     return model
 
-# Generate passwords in a batch
 def generate_batch(model, char_to_idx, idx_to_char, batch_size, gpu_id, min_len=8, max_len=26, temp=1.0):
+    # Select device based on GPU availability and the provided gpu_id
     device = torch.device(f'cuda:{gpu_id}' if torch.cuda.is_available() else 'cpu')
-    model = model.to(device)
-    model.eval()
-    passwords = [[] for _ in range(batch_size)]
-    finished = [False] * batch_size
+    model = model.to(device)  # Move model to the selected device
+    model.eval()  # Set model to evaluation mode
+    passwords = [[] for _ in range(batch_size)]  # Initialize list to store generated passwords for each batch entry
+    finished = [False] * batch_size  # Track which passwords have reached <END>
 
-    with torch.no_grad():
+    with torch.no_grad():  # Disable gradient calculation for inference
+        # Start sequence with the <START> token for each password
         current_chars = torch.tensor([[char_to_idx['<START>']] for _ in range(batch_size)], dtype=torch.long).to(device)
 
+        # Generate up to max_len characters
         for _ in range(max_len):
-            outputs = model(current_chars)
-            outputs = outputs[:, -1, :] / temp
-            probs = torch.softmax(outputs, dim=-1)
-            next_chars = torch.multinomial(probs, 1).squeeze(1)
+            outputs = model(current_chars)  # Forward pass through the model
+            outputs = outputs[:, -1, :] / temp  # Take last character logits and adjust with temperature
+            probs = torch.softmax(outputs, dim=-1)  # Convert logits to probabilities
+            next_chars = torch.multinomial(probs, 1).squeeze(1)  # Sample next characters
 
+            # Append generated characters to passwords
             for i, next_char in enumerate(next_chars):
                 if next_char == char_to_idx['<END>'] and len(passwords[i]) >= min_len:
-                    finished[i] = True
+                    finished[i] = True  # Mark as finished if <END> reached and minimum length satisfied
                 elif next_char != char_to_idx['<PAD>'] and not finished[i]:
-                    passwords[i].append(idx_to_char[next_char.item()])
+                    passwords[i].append(idx_to_char[next_char.item()])  # Add character to password
 
-            if all(finished):
+            if all(finished):  # Stop if all passwords are finished
                 break
 
+            # Append next characters to the current input for next iteration
             current_chars = torch.cat([current_chars, next_chars.unsqueeze(1)], dim=1)
 
+    # Return passwords that meet minimum length requirement
     return [''.join(pwd) for pwd in passwords if len(pwd) >= min_len]
 
-# Generate passwords with multiprocessing
+
 def generate_passwords(model, char_to_idx, idx_to_char, num_passwords, batch_size, num_workers, temp):
+    # Keep track of how many passwords have been generated so far
     total_generated = 0
     passwords = []
-    num_gpus = torch.cuda.device_count()
+    num_gpus = torch.cuda.device_count()  # Detect number of GPUs
 
-    model = model.cpu()
+    model = model.cpu()  # Move model to CPU for multiprocessing
 
+    # Use multiprocessing pool for parallel generation
     with mp.Pool(processes=num_workers) as pool:
-        pbar = tqdm(total=num_passwords, desc="Generating passwords")
+        pbar = tqdm(total=num_passwords, desc="Generating passwords")  # Progress bar
         
+        # Continue generating until we reach the required number of passwords
         while total_generated < num_passwords:
-            batch_results = [pool.apply_async(generate_batch, (model, char_to_idx, idx_to_char, batch_size, i % max(num_gpus, 1),  temp)) for i in range(num_workers)]
+            # Dispatch parallel generation jobs across workers
+            batch_results = [pool.apply_async(generate_batch, (model, char_to_idx, idx_to_char, batch_size, i % max(num_gpus, 1), temp)) for i in range(num_workers)]
+            
+            # Collect results from each worker
             for result in batch_results:
                 batch_passwords = result.get()
                 passwords.extend(batch_passwords)
                 new_passwords = len(batch_passwords)
                 total_generated += new_passwords
-                pbar.update(new_passwords)
+                pbar.update(new_passwords)  # Update progress bar
         
         pbar.close()
 
+    # Return only the requested number of passwords
     return passwords[:num_passwords]
 
+# Main method to train model
 def runner(
     mode: str,
     input_file: str = 'input.txt',
@@ -213,39 +237,49 @@ def runner(
     num_workers: int = 4
 ):
     if mode == 'train':
+        # Ensure an input file is provided for training
         if not input_file:
             raise ValueError("Input file required for training")
         
+        # Remove any existing model file
         if os.path.exists(model_path):
             os.remove(model_path)
             
         print("Initializing a new model.")
+        
+        # Build character-to-index and index-to-character mappings
         char_to_idx = {chr(i): i - 31 for i in range(32, 127)}
         char_to_idx['<PAD>'] = 0
         char_to_idx['<START>'] = len(char_to_idx)
         char_to_idx['<END>'] = len(char_to_idx)
         idx_to_char = {i: char for char, i in char_to_idx.items()}
+        
+        # Initialize model
         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
         model.to(DEVICE)
 
+        # Load and filter training data from input file
         with open(input_file, 'r', encoding='latin-1') as f:
             passwords = [line.strip() for line in f if 8 <= len(line.strip()) <= 26 and all(32 <= ord(c) < 127 for c in line.strip())]
         
-        random.shuffle(passwords)
+        random.shuffle(passwords)  # Shuffle dataset
         max_len = 28
-        train_passwords = passwords[:int(0.9 * len(passwords))]
-        val_passwords = passwords[int(0.9 * len(passwords)):]
+        train_passwords = passwords[:int(0.9 * len(passwords))]  # 90% training
+        val_passwords = passwords[int(0.9 * len(passwords)):]    # 10% validation
 
+        # Create dataset objects
         train_dataset = PasswordDataset(train_passwords, max_len)
         val_dataset = PasswordDataset(val_passwords, max_len)
         
+        # Assign dataset metadata
         train_dataset.char_to_idx = char_to_idx
         train_dataset.idx_to_char = idx_to_char
         train_dataset.vocab_size = len(char_to_idx)
         val_dataset.char_to_idx = char_to_idx
         val_dataset.idx_to_char = idx_to_char
         val_dataset.vocab_size = len(char_to_idx)
-        #print("x")
+
+        # Create data loaders for training and validation
         train_loader = DataLoader(
             train_dataset,
             batch_size=batch_size,
@@ -254,7 +288,7 @@ def runner(
             pin_memory=True,
             persistent_workers=True
         )
-        #print("x")
+        
         val_loader = DataLoader(
             val_dataset,
             batch_size=batch_size,
@@ -263,12 +297,18 @@ def runner(
             pin_memory=True,
             persistent_workers=True
         )
+
         print("Starting training...")
+        
+        # Loss, optimizer, and learning rate scheduler
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters())
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+        
+        # Train the model
         model = train_model(model, train_loader, val_loader, loss_fn, optimizer, scheduler, epochs)
 
+        # Save trained model and mappings
         torch.save({
             'model_state_dict': model.state_dict(),
             'char_to_idx': char_to_idx,
@@ -277,29 +317,36 @@ def runner(
         print(f"Model saved: {model_path}")
 
     elif mode == 'generate':
+        # Ensure the model file exists
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
         if not output_file:
             raise ValueError("Output file required for generation")
 
         print(f"Loading model: {model_path}")
+        
+        # Load model checkpoint
         checkpoint = torch.load(model_path, map_location='cpu')
         char_to_idx = checkpoint['char_to_idx']
         idx_to_char = checkpoint['idx_to_char']
         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
         model.load_state_dict(checkpoint['model_state_dict'])
 
-        model.eval()
+        model.eval()  # Set to evaluation mode
 
         print(f"Generating passwords...")
+        
+        # Generate passwords
         passwords = generate_passwords(model, char_to_idx, idx_to_char, num_passwords, batch_size, num_workers, temperature)
 
+        # Save generated passwords to output file
         with open(output_file, 'w', encoding='utf-8') as f:
             for password in passwords:
                 f.write(f"{password}\n")
 
         print(f"Passwords saved to: {output_file}")
         
+
 def searcher(password: str, input_file: str = 'input.txt') -> int:
     """
     Counts the number of lines in the input file that are substrings of the given password.
@@ -307,17 +354,20 @@ def searcher(password: str, input_file: str = 'input.txt') -> int:
     count = 0
     with open(input_file, 'r', encoding='latin-1') as file:
         for line in file:
+            
             line = line.strip()
-            if line in password:
+            
+            # Check if file line is substring of given password
+            if line in password:  
                 count += 1
+                
     return count
 
+# Select and return a new password
 def newPassword(input_file: str = 'output.txt') -> str:
     """
-    Randomly selects a line from the first 1000 lines of the input file.
-
+    Randomly selects a line from the first 100 lines of the input file.
     """
-    
     lines = []
     with open(input_file, 'r', encoding='latin-1') as file:
         for idx, line in enumerate(file):
@@ -326,195 +376,31 @@ def newPassword(input_file: str = 'output.txt') -> str:
             lines.append(line.strip())
     return random.choice(lines) if lines else ""
 
-    # lineNum = random.randint(1000)
-    # with open(input_file, 'r', encoding='latin-1') as file:
-    #     res = file.readline()
-    #     for i in range(lineNum):
-    #         res = file.readline()
-    #     res
-    
+
 def resetInput():
+    # Remove model files and input.txt
     os.remove('model.pth')
     os.remove('best_model.pth')
     os.remove('input.txt')
+    # Create new random passwords in input.txt
     with open('input.txt', 'w') as newinputFile:
         newlines = []
         for i in range(10):
             newpass = ""
             for k in range(10):
-                newpass+=chr(random.randint(40,125))
-            newlines.append(newpass+"\n")
+                newpass += chr(random.randint(40, 125))  # Random ASCII chars
+            newlines.append(newpass + "\n")
         newinputFile.writelines(newlines)
             
 
-
-       
-
 def addInput(newLines):
+    # Append new lines to input.txt
     with open('input.txt', 'a') as inputFile:
         for line in newLines:
-            inputFile.write(line+'\n')
+            inputFile.write(line + '\n')
             
-        
+
 def printer(jsonInput):
+    
+    # Print a DataFrame representation of the JSON input
     print(pd.DataFrame(jsonInput))
-    
-    
-#     def runner(
-#     mode: str,
-#     input_file: str = 'input.txt',
-#     output_file: str = 'output.txt',
-#     model_path: str = 'model.pth',
-#     epochs: int = 50,
-#     batch_size: int = 256,
-#     num_passwords: int = 100,
-#     temperature: float = 1.0,
-#     num_workers: int = 4
-# ):
-#     if mode == 'train':
-#         if not input_file:
-#             raise ValueError("Input file required for training")
-        
-#         if os.path.exists(model_path):
-#             os.remove(model_path)
-            
-#         print("Initializing a new model.")
-#         char_to_idx = {chr(i): i - 31 for i in range(32, 127)}
-#         char_to_idx['<PAD>'] = 0
-#         char_to_idx['<START>'] = len(char_to_idx)
-#         char_to_idx['<END>'] = len(char_to_idx)
-#         idx_to_char = {i: char for char, i in char_to_idx.items()}
-#         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
-#         model.to(DEVICE)
-
-#         with open(input_file, 'r', encoding='latin-1') as f:
-#             passwords = [line.strip() for line in f if 8 <= len(line.strip()) <= 26 and all(32 <= ord(c) < 127 for c in line.strip())]
-        
-#         random.shuffle(passwords)
-#         max_len = 28
-#         train_passwords = passwords[:int(0.9 * len(passwords))]
-#         val_passwords = passwords[int(0.9 * len(passwords)):]
-
-#         train_dataset = PasswordDataset(train_passwords, max_len)
-#         val_dataset = PasswordDataset(val_passwords, max_len)
-        
-#         train_dataset.char_to_idx = char_to_idx
-#         train_dataset.idx_to_char = idx_to_char
-#         train_dataset.vocab_size = len(char_to_idx)
-#         val_dataset.char_to_idx = char_to_idx
-#         val_dataset.idx_to_char = idx_to_char
-#         val_dataset.vocab_size = len(char_to_idx)
-#         #print("x")
-#         train_loader = DataLoader(
-#             train_dataset,
-#             batch_size=batch_size,
-#             shuffle=True,
-#             num_workers=num_workers,
-#             pin_memory=True,
-#             persistent_workers=True
-#         )
-#         #print("x")
-#         val_loader = DataLoader(
-#             val_dataset,
-#             batch_size=batch_size,
-#             shuffle=False,
-#             num_workers=num_workers,
-#             pin_memory=True,
-#             persistent_workers=True
-#         )
-#         print("Starting training...")
-#         loss_fn = nn.CrossEntropyLoss()
-#         optimizer = optim.Adam(model.parameters())
-#         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
-#         model = train_model(model, train_loader, val_loader, loss_fn, optimizer, scheduler, epochs)
-
-#         torch.save({
-#             'model_state_dict': model.state_dict(),
-#             'char_to_idx': char_to_idx,
-#             'idx_to_char': idx_to_char
-#         }, model_path)
-#         print(f"Model saved: {model_path}")
-
-#     elif mode == 'generate':
-#         if not os.path.exists(model_path):
-#             raise FileNotFoundError(f"Model file not found: {model_path}")
-#         if not output_file:
-#             raise ValueError("Output file required for generation")
-
-#         print(f"Loading model: {model_path}")
-#         checkpoint = torch.load(model_path, map_location='cpu')
-#         char_to_idx = checkpoint['char_to_idx']
-#         idx_to_char = checkpoint['idx_to_char']
-#         model = PasswordGenerator(len(char_to_idx), embed_size=256, hidden_size=512, num_layers=3)
-#         model.load_state_dict(checkpoint['model_state_dict'])
-
-#         model.eval()
-
-#         print(f"Generating passwords...")
-#         passwords = generate_passwords(model, char_to_idx, idx_to_char, num_passwords, batch_size, num_workers, temperature)
-
-#         with open(output_file, 'w', encoding='utf-8') as f:
-#             for password in passwords:
-#                 f.write(f"{password}\n")
-
-#         print(f"Passwords saved to: {output_file}")
-        
-# def searcher(password: str, input_file: str = 'input.txt') -> int:
-#     """
-#     Counts the number of lines in the input file that are substrings of the given password.
-#     """
-#     count = 0
-#     with open(input_file, 'r', encoding='latin-1') as file:
-#         for line in file:
-#             line = line.strip()
-#             if line in password:
-#                 count += 1
-#     return count
-
-# def newPassword(input_file: str = 'output.txt') -> str:
-#     """
-#     Randomly selects a line from the first 1000 lines of the input file.
-
-#     """
-    
-#     lines = []
-#     with open(input_file, 'r', encoding='latin-1') as file:
-#         for idx, line in enumerate(file):
-#             if idx >= 100:
-#                 break
-#             lines.append(line.strip())
-#     return random.choice(lines) if lines else ""
-
-#     # lineNum = random.randint(1000)
-#     # with open(input_file, 'r', encoding='latin-1') as file:
-#     #     res = file.readline()
-#     #     for i in range(lineNum):
-#     #         res = file.readline()
-#     #     res
-    
-# def resetInput():
-#     #os.remove('model.pth')
-#     #os.remove('best_model.pth')
-#     #os.remove('input.txt')
-#     with open('input.txt', 'w') as newinputFile:
-#         newlines = []
-#         for i in range(10):
-#             newpass = ""
-#             for k in range(10):
-#                 newpass+=chr(random.randint(40,125))
-#             newlines.append(newpass+"\n")
-#         newinputFile.writelines(newlines)
-            
-
-
-       
-
-# def addInput(newLines):
-#     with open('input.txt', 'a') as inputFile:
-#         for line in newLines:
-#             inputFile.write(line+'\n')
-            
-        
-# def printer(jsonInput):
-#     print(pd.DataFrame(jsonInput))
-

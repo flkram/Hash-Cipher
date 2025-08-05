@@ -5,8 +5,9 @@ import model
 import hashlib
 import json
 
+# Run Flask and enable CORS for all routes and origins
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes and origins
+CORS(app)
 
 # Global hash map for quick lookup
 generated_password_hashes = {}
@@ -16,6 +17,7 @@ if os.path.exists("outputmaps.json"):
     with open("outputmaps.json", "r") as f:
         generated_password_hashes = json.load(f)
 
+# Creating new default input.txt file
 if not os.path.exists("input.txt"):
     default_passwords = [
     "D31lR{(5,m",
